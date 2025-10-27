@@ -1,0 +1,80 @@
+# visualization/renderers/SVDppVisualizationRenderer.py
+import streamlit as st
+import os
+import json
+
+from visualization.renderers.BaseVisualizationRenderer import BaseVisualizationRenderer
+from visualization import generic_renderers
+
+class SVDppVisualizationRenderer(BaseVisualizationRenderer): # Inherit from Base
+    """
+    Renders visualizations specific to SVD++, reading from visuals.json
+    and utilizing generic rendering components for convergence and snapshots.
+    """
+
+    def __init__(self, run_dir, explanations):
+        """Initialize the renderer."""
+        super().__init__(run_dir, explanations) # Pass explanations to base
+        self.algorithm_name = "SVD++"
+        self.run_timestamp = os.path.basename(run_dir)
+        # Add SVD++ specific explanations (including for Y)
+        self.explanations.update({
+            "Factor Change": "Shows the Frobenius norm of the change in user (P), item (Q), and implicit item (Y) latent factor matrices between iterations. A decreasing trend indicates convergence.",
+            "Snapshots": "These plots visualize the distribution and relationships within the latent factor matrices (P, Q, and Y) at key iterations."
+            # Add or override more interpretations if needed
+        })
+
+    def render(self):
+        """Render SVD++ visualizations from the manifest."""
+        st.header(f"SVD++ Visualizations for {self.run_timestamp}")
+        st.write(f"Displaying visualizations for algorithm: {self.algorithm_name}")
+
+        manifest_path = os.path.join(self.run_dir, 'visuals.json')
+        if not os.path.exists(manifest_path):
+            st.warning(f"Visuals manifest 'visuals.json' not found in {self.run_dir}.")
+            return
+
+        try:
+            with open(manifest_path, 'r') as f:
+                manifest = json.load(f)
+        except Exception as e:
+            st.error(f"Error loading 'visuals.json': {e}")
+            return
+
+        if not manifest:
+            st.info("No visualizations were generated for this run according to visuals.json.")
+            return
+
+        # --- Render Convergence Plots ---
+        st.subheader("Convergence Plots")
+        factor_change_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "Factor Change"), None)
+
+        if factor_change_plot:
+            # Render the line plot (should now include P, Q, Y changes)
+            generic_renderers.render_line_plot(self.run_dir, factor_change_plot, self.explanations, st)
+        else:
+            st.info("No factor change convergence plot found for SVD++.")
+
+        st.divider()
+
+        # --- Render Snapshots (Using generic logic) ---
+        # Find all snapshot entries
+        snapshots = [e for e in manifest if e["type"] == "factor_snapshot"]
+        snapshots.sort(key=lambda x: x["iteration"]) # Sort by iteration
+
+        if snapshots:
+            first_snapshot = snapshots[0]
+            last_snapshot = snapshots[-1] if len(snapshots) > 1 else snapshots[0]
+
+            if first_snapshot["iteration"] == last_snapshot["iteration"]:
+                st.subheader(f"Snapshot: Iteration {first_snapshot['iteration']}")
+                # Render the single snapshot (will include Y heatmap if available)
+                generic_renderers.render_factor_snapshot(self.run_dir, first_snapshot, self.explanations, st)
+            else:
+                st.subheader(f"Snapshot Comparison: Iteration {first_snapshot['iteration']} vs Iteration {last_snapshot['iteration']}")
+                col_snap1, col_snap2 = st.columns(2)
+                # Render first and last snapshots side-by-side
+                generic_renderers.render_factor_snapshot(self.run_dir, first_snapshot, self.explanations, col_snap1)
+                generic_renderers.render_factor_snapshot(self.run_dir, last_snapshot, self.explanations, col_snap2)
+        else:
+            st.info("No latent factor snapshots found for SVD++.")
