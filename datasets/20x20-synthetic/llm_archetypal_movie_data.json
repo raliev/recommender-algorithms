@@ -1,0 +1,317 @@
+[
+    {
+        "title": "Forrest Gump",
+        "characteristics": {
+            "Heartwarming & Comedic": 10,
+            "Pure Horror & Dread": 0,
+            "Action & Spectacle": 2,
+            "Dialogue-Driven & Introspective": 6,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 1,
+            "Grounded in Reality & History": 8,
+            "Intellectual & Philosophical Puzzle": 4,
+            "Deeply Dramatic & Emotional": 9,
+            "Visually Artistic & Stylized": 5,
+            "Fast-Paced & Thrilling": 3
+        }
+    },
+    {
+        "title": "The Exorcist",
+        "characteristics": {
+            "Heartwarming & Comedic": 1,
+            "Pure Horror & Dread": 10,
+            "Action & Spectacle": 1,
+            "Dialogue-Driven & Introspective": 3,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 3,
+            "Grounded in Reality & History": 2,
+            "Intellectual & Philosophical Puzzle": 5,
+            "Deeply Dramatic & Emotional": 7,
+            "Visually Artistic & Stylized": 4,
+            "Fast-Paced & Thrilling": 6
+        }
+    },
+    {
+        "title": "Mad Max: Fury Road",
+        "characteristics": {
+            "Heartwarming & Comedic": 0,
+            "Pure Horror & Dread": 2,
+            "Action & Spectacle": 10,
+            "Dialogue-Driven & Introspective": 0,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 8,
+            "Grounded in Reality & History": 1,
+            "Intellectual & Philosophical Puzzle": 2,
+            "Deeply Dramatic & Emotional": 3,
+            "Visually Artistic & Stylized": 9,
+            "Fast-Paced & Thrilling": 10
+        }
+    },
+    {
+        "title": "My Dinner with Andre",
+        "characteristics": {
+            "Heartwarming & Comedic": 5,
+            "Pure Horror & Dread": 1,
+            "Action & Spectacle": 0,
+            "Dialogue-Driven & Introspective": 10,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 1,
+            "Grounded in Reality & History": 6,
+            "Intellectual & Philosophical Puzzle": 8,
+            "Deeply Dramatic & Emotional": 7,
+            "Visually Artistic & Stylized": 4,
+            "Fast-Paced & Thrilling": 1
+        }
+    },
+    {
+        "title": "Avatar",
+        "characteristics": {
+            "Heartwarming & Comedic": 3,
+            "Pure Horror & Dread": 1,
+            "Action & Spectacle": 8,
+            "Dialogue-Driven & Introspective": 2,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 10,
+            "Grounded in Reality & History": 2,
+            "Intellectual & Philosophical Puzzle": 3,
+            "Deeply Dramatic & Emotional": 5,
+            "Visually Artistic & Stylized": 9,
+            "Fast-Paced & Thrilling": 6
+        }
+    },
+    {
+        "title": "Schindler's List",
+        "characteristics": {
+            "Heartwarming & Comedic": 1,
+            "Pure Horror & Dread": 7,
+            "Action & Spectacle": 1,
+            "Dialogue-Driven & Introspective": 6,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 0,
+            "Grounded in Reality & History": 10,
+            "Intellectual & Philosophical Puzzle": 6,
+            "Deeply Dramatic & Emotional": 10,
+            "Visually Artistic & Stylized": 7,
+            "Fast-Paced & Thrilling": 4
+        }
+    },
+    {
+        "title": "Inception",
+        "characteristics": {
+            "Heartwarming & Comedic": 2,
+            "Pure Horror & Dread": 2,
+            "Action & Spectacle": 7,
+            "Dialogue-Driven & Introspective": 6,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 9,
+            "Grounded in Reality & History": 2,
+            "Intellectual & Philosophical Puzzle": 10,
+            "Deeply Dramatic & Emotional": 5,
+            "Visually Artistic & Stylized": 8,
+            "Fast-Paced & Thrilling": 9
+        }
+    },
+    {
+        "title": "The Shawshank Redemption",
+        "characteristics": {
+            "Heartwarming & Comedic": 3,
+            "Pure Horror & Dread": 0,
+            "Action & Spectacle": 1,
+            "Dialogue-Driven & Introspective": 8,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 1,
+            "Grounded in Reality & History": 7,
+            "Intellectual & Philosophical Puzzle": 7,
+            "Deeply Dramatic & Emotional": 10,
+            "Visually Artistic & Stylized": 6,
+            "Fast-Paced & Thrilling": 5
+        }
+    },
+    {
+        "title": "The Grand Budapest Hotel",
+        "characteristics": {
+            "Heartwarming & Comedic": 8,
+            "Pure Horror & Dread": 0,
+            "Action & Spectacle": 3,
+            "Dialogue-Driven & Introspective": 7,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 3,
+            "Grounded in Reality & History": 4,
+            "Intellectual & Philosophical Puzzle": 6,
+            "Deeply Dramatic & Emotional": 5,
+            "Visually Artistic & Stylized": 10,
+            "Fast-Paced & Thrilling": 4
+        }
+    },
+    {
+        "title": "Goodfellas",
+        "characteristics": {
+            "Heartwarming & Comedic": 2,
+            "Pure Horror & Dread": 1,
+            "Action & Spectacle": 5,
+            "Dialogue-Driven & Introspective": 7,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 0,
+            "Grounded in Reality & History": 8,
+            "Intellectual & Philosophical Puzzle": 4,
+            "Deeply Dramatic & Emotional": 7,
+            "Visually Artistic & Stylized": 7,
+            "Fast-Paced & Thrilling": 6
+        }
+    },
+    {
+        "title": "A Clockwork Orange",
+        "characteristics": {
+            "Heartwarming & Comedic": 3,
+            "Pure Horror & Dread": 5,
+            "Action & Spectacle": 4,
+            "Dialogue-Driven & Introspective": 8,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 6,
+            "Grounded in Reality & History": 3,
+            "Intellectual & Philosophical Puzzle": 10,
+            "Deeply Dramatic & Emotional": 7,
+            "Visually Artistic & Stylized": 10,
+            "Fast-Paced & Thrilling": 6
+        }
+    },
+    {
+        "title": "The Matrix",
+        "characteristics": {
+            "Heartwarming & Comedic": 1,
+            "Pure Horror & Dread": 1,
+            "Action & Spectacle": 9,
+            "Dialogue-Driven & Introspective": 6,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 10,
+            "Grounded in Reality & History": 2,
+            "Intellectual & Philosophical Puzzle": 9,
+            "Deeply Dramatic & Emotional": 5,
+            "Visually Artistic & Stylized": 9,
+            "Fast-Paced & Thrilling": 10
+        }
+    },
+    {
+        "title": "Parasite",
+        "characteristics": {
+            "Heartwarming & Comedic": 4,
+            "Pure Horror & Dread": 3,
+            "Action & Spectacle": 2,
+            "Dialogue-Driven & Introspective": 8,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 1,
+            "Grounded in Reality & History": 7,
+            "Intellectual & Philosophical Puzzle": 9,
+            "Deeply Dramatic & Emotional": 8,
+            "Visually Artistic & Stylized": 7,
+            "Fast-Paced & Thrilling": 7
+        }
+    },
+    {
+        "title": "Braveheart",
+        "characteristics": {
+            "Heartwarming & Comedic": 2,
+            "Pure Horror & Dread": 0,
+            "Action & Spectacle": 8,
+            "Dialogue-Driven & Introspective": 5,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 0,
+            "Grounded in Reality & History": 9,
+            "Intellectual & Philosophical Puzzle": 5,
+            "Deeply Dramatic & Emotional": 10,
+            "Visually Artistic & Stylized": 8,
+            "Fast-Paced & Thrilling": 7
+        }
+    },
+    {
+        "title": "Pan's Labyrinth",
+        "characteristics": {
+            "Heartwarming & Comedic": 2,
+            "Pure Horror & Dread": 5,
+            "Action & Spectacle": 4,
+            "Dialogue-Driven & Introspective": 6,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 10,
+            "Grounded in Reality & History": 2,
+            "Intellectual & Philosophical Puzzle": 7,
+            "Deeply Dramatic & Emotional": 8,
+            "Visually Artistic & Stylized": 10,
+            "Fast-Paced & Thrilling": 6
+        }
+    },
+    {
+        "title": "Die Hard",
+        "characteristics": {
+            "Heartwarming & Comedic": 2,
+            "Pure Horror & Dread": 1,
+            "Action & Spectacle": 9,
+            "Dialogue-Driven & Introspective": 3,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 1,
+            "Grounded in Reality & History": 5,
+            "Intellectual & Philosophical Puzzle": 3,
+            "Deeply Dramatic & Emotional": 5,
+            "Visually Artistic & Stylized": 7,
+            "Fast-Paced & Thrilling": 10
+        }
+    },
+    {
+        "title": "The Godfather",
+        "characteristics": {
+            "Heartwarming & Comedic": 2,
+            "Pure Horror & Dread": 1,
+            "Action & Spectacle": 4,
+            "Dialogue-Driven & Introspective": 9,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 1,
+            "Grounded in Reality & History": 8,
+            "Intellectual & Philosophical Puzzle": 8,
+            "Deeply Dramatic & Emotional": 10,
+            "Visually Artistic & Stylized": 9,
+            "Fast-Paced & Thrilling": 5
+        }
+    },
+    {
+        "title": "Jurassic Park",
+        "characteristics": {
+            "Heartwarming & Comedic": 3,
+            "Pure Horror & Dread": 4,
+            "Action & Spectacle": 8,
+            "Dialogue-Driven & Introspective": 4,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 9,
+            "Grounded in Reality & History": 3,
+            "Intellectual & Philosophical Puzzle": 5,
+            "Deeply Dramatic & Emotional": 6,
+            "Visually Artistic & Stylized": 8,
+            "Fast-Paced & Thrilling": 10
+        }
+    },
+    {
+        "title": "Eternal Sunshine of the Spotless Mind",
+        "characteristics": {
+            "Heartwarming & Comedic": 7,
+            "Pure Horror & Dread": 0,
+            "Action & Spectacle": 2,
+            "Dialogue-Driven & Introspective": 9,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 6,
+            "Grounded in Reality & History": 4,
+            "Intellectual & Philosophical Puzzle": 8,
+            "Deeply Dramatic & Emotional": 10,
+            "Visually Artistic & Stylized": 9,
+            "Fast-Paced & Thrilling": 4
+        }
+    },
+    {
+        "title": "The Sixth Sense",
+        "characteristics": {
+            "Heartwarming & Comedic": 1,
+            "Pure Horror & Dread": 8,
+            "Action & Spectacle": 2,
+            "Dialogue-Driven & Introspective": 7,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 2,
+            "Grounded in Reality & History": 4,
+            "Intellectual & Philosophical Puzzle": 9,
+            "Deeply Dramatic & Emotional": 8,
+            "Visually Artistic & Stylized": 6,
+            "Fast-Paced & Thrilling": 7
+        }
+    },
+    {
+        "title": "Inside Out",
+        "characteristics": {
+            "Heartwarming & Comedic": 10,
+            "Pure Horror & Dread": 0,
+            "Action & Spectacle": 3,
+            "Dialogue-Driven & Introspective": 7,
+            "Immersive World-Building (Sci-Fi/Fantasy)": 5,
+            "Grounded in Reality & History": 3,
+            "Intellectual & Philosophical Puzzle": 6,
+            "Deeply Dramatic & Emotional": 9,
+            "Visually Artistic & Stylized": 8,
+            "Fast-Paced & Thrilling": 4
+        }
+    }
+]
