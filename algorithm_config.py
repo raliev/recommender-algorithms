@@ -38,7 +38,7 @@ WIDGET_MAP = {
 ALGORITHM_CONFIG = {
     "SVD": {
         "parameters": {
-            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32}
+            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 20}
         },
         "result_type": "matrix_factorization",
         "visualizer_class": SVDVisualizer,
