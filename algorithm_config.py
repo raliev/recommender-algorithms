@@ -1,5 +1,9 @@
 import streamlit as st # Needed for widget functions
 
+from visualization.renderers.SASRecVisualizationRenderer import SASRecVisualizationRenderer
+from visualization.visualizers.SASRecVisualizer import SASRecVisualizer
+from visualization.renderers.VAEVisualizationRenderer import VAEVisualizationRenderer
+from visualization.visualizers.VAEVisualizer import VAEVisualizer
 from visualization.renderers.PureSVDVisualizationRenderer import PureSVDVisualizationRenderer
 from visualization.renderers.SVDVisualizationRenderer import SVDVisualizationRenderer
 from visualization.visualizers.PureSVDVisualizer import PureSVDVisualizer
@@ -203,10 +207,11 @@ ALGORITHM_CONFIG = {
             "max_len": {"type": "slider", "label": "Max Sequence Length", "min": 10, "max": 200, "default": 50},
             "num_blocks": {"type": "slider", "label": "Number of Attention Blocks", "min": 1, "max": 4, "default": 2},
             "num_heads": {"type": "slider", "label": "Number of Attention Heads", "min": 1, "max": 4, "default": 1},
-            "dropout_rate": {"type": "slider", "label": "Dropout Rate", "min": 0.0, "max": 0.5, "default": 0.2, "step": 0.05}
+            "dropout_rate": {"type": "slider", "label": "Dropout Rate", "min": 0.0, "max": 0.5, "default": 0.2, "step": 0.05} 
         },
-        "result_type": "neural", # Assign a type
-        "visualizer_class": None
+        "result_type": "neural",
+        "visualizer_class": SASRecVisualizer,
+        "visualization_renderer_class": SASRecVisualizationRenderer
     },
     "VAE": {
         "parameters": {
@@ -216,7 +221,8 @@ ALGORITHM_CONFIG = {
             "learning_rate": {"type": "slider", "label": "Learning Rate", "min": 0.0001, "max": 0.01, "default": 0.001, "format": "%.4f"}
         },
         "result_type": "vae",
-        "visualizer_class": None
+        "visualizer_class": VAEVisualizer,
+        "visualization_renderer_class": VAEVisualizationRenderer
     },
     "SLIM": {
         "parameters": {

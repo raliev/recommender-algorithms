@@ -1,6 +1,7 @@
 # app/algorithms/funksvd.py
 import numpy as np
 from .base import Recommender
+from sklearn.metrics import mean_squared_error # Import RMSE calculation
 
 class FunkSVDRecommender(Recommender):
     def __init__(self, k, iterations=100, learning_rate=0.005, lambda_reg=0.02):
@@ -9,9 +10,22 @@ class FunkSVDRecommender(Recommender):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.lambda_reg = lambda_reg
+        self.rated_mask = None # Add this
+        self.R_train = None # Add this
+
+    def _calculate_objective(self, R, rated_mask, P, Q):
+        """Calculates RMSE on the observed training ratings."""
+        pred = P @ Q.T
+        observed_preds = pred[rated_mask]
+        observed_actuals = R[rated_mask]
+        if observed_actuals.size == 0:
+            return 0.0
+        return np.sqrt(mean_squared_error(observed_actuals, observed_preds))
 
     def fit(self, R, progress_callback=None, visualizer = None):
         num_users, num_items = R.shape
+        self.R_train = R # Store R
+        self.rated_mask = R > 0 # Store the mask
         self.P = np.random.normal(scale=1./self.k, size=(num_users, self.k))
         self.Q = np.random.normal(scale=1./self.k, size=(num_items, self.k))
 
@@ -20,7 +34,8 @@ class FunkSVDRecommender(Recommender):
                 'algorithm': self.name, 'k': self.k, 'iterations_set': self.iterations,
                 'learning_rate': self.learning_rate, 'lambda_reg': self.lambda_reg
             }
-            visualizer.start_run(params_to_save)
+            # Pass R to start_run for the breakdown plot
+            visualizer.start_run(params_to_save, R=self.R_train)
 
         for i in range(self.iterations):
             P_old = self.P.copy() if visualizer else None
@@ -39,11 +54,15 @@ class FunkSVDRecommender(Recommender):
                 q_change_norm = np.linalg.norm(self.Q - Q_old, 'fro')
                 current_iteration = i + 1
 
+                # Calculate training RMSE
+                objective = self._calculate_objective(self.R_train, self.rated_mask, self.P, self.Q)
+
                 visualizer.record_iteration(
                     iteration_num=current_iteration,
                     total_iterations=self.iterations,
                     P=self.P,
                     Q=self.Q,
+                    objective=objective, # Pass the new objective
                     p_change=p_change_norm,
                     q_change=q_change_norm
                 )
@@ -55,16 +74,3 @@ class FunkSVDRecommender(Recommender):
             visualizer.end_run()
 
         return self
-
-    def end_run(self):
-        """
-        Called at the end of the fit method.
-        Explicitly saves params, plots, history, and the manifest.
-        """
-        self.params_saved['iterations_run'] = self.iterations_run
-        self._save_params() # Update with final iteration count
-
-        self._plot_convergence_graphs() # Plot CML's convergence graphs
-
-        self._save_history()
-        self._save_visuals_manifest()

@@ -1,4 +1,3 @@
-# app/algorithms/autoencoder.py
 import numpy as np
 from .base import Recommender
 
@@ -72,9 +71,21 @@ class VAERecommender(Recommender):
         self.model = VAEModel(num_items=self.num_items, latent_dim=self.k)
         optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
+        if visualizer:
+            params_to_save = {
+                'algorithm': self.name,
+                'k': self.k, 'epochs_set': self.epochs,
+                'learning_rate': self.learning_rate, 'batch_size': self.batch_size
+            }
+            visualizer.k_factors = self.k # Set k_factors for the visualizer
+            visualizer.start_run(params_to_save)
+
         self.model.train()
         for epoch in range(self.epochs):
             total_loss = 0
+            num_batches = 0
+            last_mu, last_log_var, last_recon, last_input = None, None, None, None
+
             for data in dataloader:
                 inputs = data[0]
                 optimizer.zero_grad()
@@ -83,9 +94,33 @@ class VAERecommender(Recommender):
                 loss.backward()
                 total_loss += loss.item()
                 optimizer.step()
+                num_batches += 1
+
+                # Store last batch data for visualization
+                last_mu = mu.data.cpu().numpy()
+                last_log_var = log_var.data.cpu().numpy()
+                last_recon = recon_batch.data.cpu().numpy()
+                last_input = inputs.data.cpu().numpy()
+
+            avg_loss = total_loss / num_batches if num_batches > 0 else 0
+
+            if visualizer:
+                visualizer.record_iteration(
+                    iteration_num=epoch + 1,
+                    total_iterations=self.epochs,
+                    objective=avg_loss,
+                    mu=last_mu,
+                    log_var=last_log_var,
+                    recon_x=last_recon,
+                    x_input=last_input
+                )
 
             if progress_callback:
                 progress_callback((epoch + 1) / self.epochs)
+
+        if visualizer:
+            visualizer.end_run()
+
         return self
 
     def predict(self):

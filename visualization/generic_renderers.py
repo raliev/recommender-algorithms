@@ -50,6 +50,15 @@ def render_histogram(run_dir, manifest_entry, explanations, column=None):
     _render_image_with_interpretation(file_path, caption, interp_text, column)
 
 
+def render_latent_distribution_plot(run_dir, manifest_entry, explanations, column=None):
+    """Renders a single latent_distribution visualization."""
+    file_path = os.path.join(run_dir, manifest_entry["file"])
+    caption = manifest_entry["name"]
+    interp_key = manifest_entry["interpretation_key"]
+    interp_text = explanations.get(interp_key, f"Explanation for '{interp_key}' not found.")
+
+    _render_image_with_interpretation(file_path, caption, interp_text, column)
+
 def render_recommendation_breakdown(run_dir, manifest_entry,
                                     explanations, column=None):
     """Renders a single recommendation_breakdown visualization."""

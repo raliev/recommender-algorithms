@@ -2,6 +2,14 @@
 SVD++ (SVD-plus-plus) is an extension of FunkSVD that adds **bias terms** for users ($b_u$) and items ($b_i$) to the prediction formula. These visualizations focus on the main **P** (user factor) and **Q** (item factor) matrices, as they are the most complex components to visualize and understand.
 
 ---
+### Objective
+Shows the Root Mean Squared Error (RMSE) calculated on the *observed ratings* in the training set over iterations. A decreasing trend indicates the model (including explicit user/item factors P/Q, implicit item factors Y, and biases) is learning to better predict known ratings and converging.
+
+---
+### Factor Change
+Shows the Frobenius norm of the change in the explicit user factors (P), item factors (Q), and implicit item factors (Y) between iterations. Bias changes are not typically shown here. A decreasing trend towards zero indicates that all three factor matrices are stabilizing, a sign of convergence.
+
+---
 ### Factor Change Norm Plot
 This plot shows the **rate of change** of the User (P) and Item (Q) factor matrices at each iteration, measured by the Frobenius norm.
 

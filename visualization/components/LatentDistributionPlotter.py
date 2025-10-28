@@ -8,7 +8,7 @@ from scipy.stats import norm
 class LatentDistributionPlotter(BasePlotter):
     """
     Plots a histogram of the flattened values from a latent space (e.g.,
-    a VAE's 'z' vectors) to check if it approximates a prior
+    a VAE's 'mu' vectors) to check if it approximates the prior
     (e.g., a standard normal distribution).
     """
 
@@ -16,7 +16,6 @@ class LatentDistributionPlotter(BasePlotter):
              filename: str, interpretation_key: str):
         """
         Generates and saves the distribution plot.
-
         Args:
             latent_vectors (np.ndarray): 2D array of latent vectors
                                          (e.g., n_samples x k_dims).
@@ -45,7 +44,7 @@ class LatentDistributionPlotter(BasePlotter):
 
         # Plot the histogram of the data
         sns.histplot(values, bins=50, kde=False, ax=ax, stat='density',
-                     label='Latent Value Distribution')
+                     label='Latent Value Distribution (μ)')
 
         # Fit a standard normal distribution (our prior) and plot it
         x = np.linspace(values.min(), values.max(), 200)

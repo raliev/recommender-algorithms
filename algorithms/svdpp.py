@@ -1,6 +1,6 @@
-# app/algorithms/svdpp.py
 import numpy as np
 from .base import Recommender
+from sklearn.metrics import mean_squared_error # Import RMSE
 
 class SVDppRecommender(Recommender):
     """
@@ -20,8 +20,8 @@ class SVDppRecommender(Recommender):
         self.lambda_y = lambda_y
         self.lambda_bu = lambda_bu
         self.lambda_bi = lambda_bi
-        self.user_bias = None # 
-        self.item_bias = None # 
+        self.user_bias = None
+        self.item_bias = None
         self.global_mean = None
 
         self.P = None # user factors (explicit)
@@ -29,23 +29,51 @@ class SVDppRecommender(Recommender):
         self.Y = None # item factors (for implicit user profile)
 
         self._user_rated_items = None
-        self._user_norm_factors = None # 
+        self._user_norm_factors = None
+        self.rated_mask = None # Add this
+        self.R_train = None # Add this
+
+    def _calculate_objective(self, R, rated_mask):
+        """Calculates RMSE on the observed training ratings."""
+        # Need to reconstruct predictions using the full SVD++ formula
+        num_users, num_items = R.shape
+        user_bias_matrix = np.repeat(self.user_bias[:, np.newaxis], num_items, axis=1)
+        item_bias_matrix = np.repeat(self.item_bias[np.newaxis, :], num_users, axis=0)
+
+        full_user_factors = np.copy(self.P)
+        for u in range(num_users):
+            rated_items = self._user_rated_items[u]
+            norm_factor = self._user_norm_factors[u]
+            if rated_items.size > 0:
+                implicit_factor_sum = self.Y[rated_items, :].sum(axis=0)
+                full_user_factors[u, :] += norm_factor * implicit_factor_sum
+
+        pred = self.global_mean + user_bias_matrix + item_bias_matrix + (full_user_factors @ self.Q.T)
+
+        observed_preds = pred[rated_mask]
+        observed_actuals = R[rated_mask]
+        if observed_actuals.size == 0:
+            return 0.0
+        return np.sqrt(mean_squared_error(observed_actuals, observed_preds))
+
 
     def fit(self, R, progress_callback=None, visualizer = None):
         num_users, num_items = R.shape
+        self.R_train = R # Store R
+        self.rated_mask = R > 0 # Store mask
 
         self.P = np.random.normal(scale=1./self.k, size=(num_users, self.k))
         self.Q = np.random.normal(scale=1./self.k, size=(num_items, self.k))
         self.Y = np.random.normal(scale=1./self.k, size=(num_items, self.k))
 
         self.user_bias = np.zeros(num_users)
-        self.item_bias = np.zeros(num_items) # 
-        self.global_mean = R[R > 0].mean()
+        self.item_bias = np.zeros(num_items)
+        self.global_mean = R[R > 0].mean() if np.any(R>0) else 0 # Handle empty R
 
         self._user_rated_items = [
             np.where(R[u, :] > 0)[0] for u in range(num_users)
         ]
-        self._user_norm_factors = np.zeros(num_users) # 
+        self._user_norm_factors = np.zeros(num_users)
         for u in range(num_users):
             item_count = len(self._user_rated_items[u])
             if item_count > 0:
@@ -53,7 +81,7 @@ class SVDppRecommender(Recommender):
 
         if visualizer:
             params_to_save = {
-                'algorithm': self.name, # Now self.name exists
+                'algorithm': self.name,
                 'k': self.k,
                 'iterations_set': self.iterations,
                 'learning_rate': self.learning_rate,
@@ -66,15 +94,17 @@ class SVDppRecommender(Recommender):
             visualizer.start_run(params_to_save)
 
         for i in range(self.iterations):
-            P_old = self.P.copy() if visualizer else None # 
-            Q_old = self.Q.copy() if visualizer else None # 
-            Y_old = self.Y.copy() if visualizer else None 
+            P_old = self.P.copy() if visualizer else None
+            Q_old = self.Q.copy() if visualizer else None
+            Y_old = self.Y.copy() if visualizer else None
 
             for u, item_idx in np.argwhere(R > 0):
                 rated_items = self._user_rated_items[u]
                 norm_factor = self._user_norm_factors[u]
-                implicit_factor_sum = self.Y[rated_items, :].sum(axis=0) # 
-                p_u_full = self.P[u, :] + norm_factor * implicit_factor_sum # 
+                implicit_factor_sum = np.zeros(self.k) # Initialize to zero
+                if rated_items.size > 0:
+                    implicit_factor_sum = self.Y[rated_items, :].sum(axis=0) # Sum if items exist
+                p_u_full = self.P[u, :] + norm_factor * implicit_factor_sum
 
                 pred = self.global_mean + self.user_bias[u] + self.item_bias[item_idx] + p_u_full @ self.Q[item_idx, :].T
                 error = R[u, item_idx] - pred
@@ -85,53 +115,57 @@ class SVDppRecommender(Recommender):
                 qi = self.Q[item_idx, :]
 
                 # Update biases
-                self.user_bias[u] += self.learning_rate * (error - self.lambda_bu * bu) # Используем lambda_bu
-                self.item_bias[item_idx] += self.learning_rate * (error - self.lambda_bi * bi) # Используем lambda_bi
+                self.user_bias[u] += self.learning_rate * (error - self.lambda_bu * bu)
+                self.item_bias[item_idx] += self.learning_rate * (error - self.lambda_bi * bi)
 
                 # Update explicit user factor P
-                self.P[u, :] += self.learning_rate * (error * qi - self.lambda_p * pu) # Используем lambda_p
+                self.P[u, :] += self.learning_rate * (error * qi - self.lambda_p * pu)
 
                 # Update item factor Q
-                self.Q[item_idx, :] += self.learning_rate * (error * p_u_full - self.lambda_q * qi) # Используем lambda_q
+                self.Q[item_idx, :] += self.learning_rate * (error * p_u_full - self.lambda_q * qi)
 
                 # Update ALL implicit item factors Y in N(u)
-                grad_y_common = error * norm_factor * qi
-                self.Y[rated_items, :] += self.learning_rate * (
-                        grad_y_common - self.lambda_y * self.Y[rated_items, :] # Используем lambda_y
-                )
+                if rated_items.size > 0: # Only update if user rated items
+                    grad_y_common = error * norm_factor * qi
+                    self.Y[rated_items, :] += self.learning_rate * (
+                            grad_y_common - self.lambda_y * self.Y[rated_items, :]
+                    )
+
             if visualizer:
                 p_change_norm = np.linalg.norm(self.P - P_old, 'fro')
                 q_change_norm = np.linalg.norm(self.Q - Q_old, 'fro')
-                y_change_norm = np.linalg.norm(self.Y - Y_old, 'fro') #
+                y_change_norm = np.linalg.norm(self.Y - Y_old, 'fro')
                 current_iteration = i + 1
+                objective = self._calculate_objective(self.R_train, self.rated_mask) # Calculate RMSE
 
                 visualizer.record_iteration(
                     iteration_num=current_iteration,
                     total_iterations=self.iterations,
                     P=self.P,
-                    Q=self.Q, # 
-                Y=self.Y,
-                p_change=p_change_norm,
-                q_change=q_change_norm,
-                y_change=y_change_norm 
+                    Q=self.Q,
+                    Y=self.Y,
+                    objective=objective, # Pass objective
+                    p_change=p_change_norm,
+                    q_change=q_change_norm,
+                    y_change=y_change_norm
                 )
 
             if progress_callback:
-                progress_callback((i + 1) / self.iterations) #
+                progress_callback((i + 1) / self.iterations)
 
         if visualizer:
             visualizer.end_run()
 
         return self
 
-    def predict(self): #
+    def predict(self):
         if self.P is None or self.Q is None or self.Y is None:
             raise RuntimeError("Model must be trained (call .fit()) before predicting.")
 
         num_users, num_items = self.P.shape[0], self.Q.shape[0]
 
-        user_bias_matrix = np.repeat(self.user_bias[:, np.newaxis], num_items, axis=1) #
-        item_bias_matrix = np.repeat(self.item_bias[np.newaxis, :], num_users, axis=0) #
+        user_bias_matrix = np.repeat(self.user_bias[:, np.newaxis], num_items, axis=1)
+        item_bias_matrix = np.repeat(self.item_bias[np.newaxis, :], num_users, axis=0)
 
         full_user_factors = np.copy(self.P)
         for u in range(num_users):
@@ -139,7 +173,7 @@ class SVDppRecommender(Recommender):
             norm_factor = self._user_norm_factors[u]
 
             if rated_items.size > 0:
-                implicit_factor_sum = self.Y[rated_items, :].sum(axis=0) #
+                implicit_factor_sum = self.Y[rated_items, :].sum(axis=0)
                 full_user_factors[u, :] += norm_factor * implicit_factor_sum
 
         self.R_predicted = self.global_mean + user_bias_matrix + item_bias_matrix + (full_user_factors @ self.Q.T)

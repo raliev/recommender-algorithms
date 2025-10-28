@@ -2,6 +2,10 @@
 
 ## Convergence Plots
 ---
+### Objective
+Shows the objective function value optimized by WRMF over iterations. This objective typically involves minimizing the squared error between predicted and actual interactions (where actual is 1 for interactions, 0 otherwise), weighted by a confidence score (C = 1 + alpha * R), plus regularization terms for P and Q. A decreasing trend indicates the model is converging towards a good implicit feedback solution.
+
+---
 
 ### Objective Function Plot (Approximate)
 
@@ -74,3 +78,17 @@
 * Look for structure. Do users and items that seem related cluster together? Are there distinct groups?
 * The distance between a user point and an item point *might* relate to preference (though WRMF uses dot products, not just distance). Users close together might have similar tastes. Items close together might be similar.
 * Comparing the first and last iteration shows how the model organizes users and items in the latent space during training. Initially random points should move into more meaningful positions.
+
+### Snapshots
+These plots visualize the distribution and relationships within the latent factor matrices (P for users, Q for items) learned by WRMF at key iterations (usually first and last).
+* **Heatmaps:** Show the magnitude of values within the factor matrices (sampled).
+* **Histograms:** Show the distribution of values within P and Q matrices.
+* **2D Latent Space (if k=2):** Plots users and items based on their first two latent factors. Proximity suggests similarity in the context of implicit feedback preferences.
+  Comparing snapshots shows how embeddings evolved during WRMF training.
+
+---
+### Recommendation Breakdown
+This visualization breaks down how WRMF uses the learned latent factors (P and Q) to generate final prediction scores for a single sample user using the dot product $P_u \cdot Q^T$.
+1.  **User History:** Shows the items the user has interacted with (implicit feedback).
+2.  **Aggregated Scores:** Shows the raw prediction scores calculated as $P_u \cdot Q^T$. Higher scores indicate items the model predicts the user is more likely to interact with.
+3.  **Top-K Recommendations:** Highlights the items predicted to have the highest rating *that the user has not already rated*.

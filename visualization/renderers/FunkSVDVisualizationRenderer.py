@@ -4,7 +4,6 @@ import os
 import json
 
 from visualization.renderers.BaseVisualizationRenderer import BaseVisualizationRenderer
-
 from visualization import generic_renderers
 
 
@@ -25,9 +24,11 @@ class FunkSVDVisualizationRenderer(BaseVisualizationRenderer):
         self.algorithm_name = "FunkSVD" # Set algorithm name
         self.run_timestamp = os.path.basename(run_dir) # Get timestamp from dir
         self.explanations.update({
-            "Factor Change": "Shows the Frobenius norm of the change in user (P) and item (Q) latent factor matrices between iterations. A decreasing trend indicates convergence.", 
-        "Snapshots": "These plots visualize the distribution and relationships within the latent factor matrices (P and Q) at key iterations. Heatmaps show factor magnitudes, histograms show value distributions, and 2D latent space plots show user/item embeddings if k=2." 
-        # Add or override more FunkSVD-specific interpretations here
+            # Add/update objective explanation
+            "Objective": "Shows the Root Mean Squared Error (RMSE) calculated on the *observed ratings* in the training set over iterations. A decreasing trend indicates convergence.",
+            "Factor Change": "Shows the Frobenius norm of the change in user (P) and item (Q) latent factor matrices between iterations. A decreasing trend indicates convergence.",
+            "Snapshots": "These plots visualize the distribution and relationships within the latent factor matrices (P and Q) at key iterations. Heatmaps show factor magnitudes, histograms show value distributions, and 2D latent space plots show user/item embeddings if k=2.",
+            "Recommendation Breakdown": "This visualization breaks down how FunkSVD uses the learned latent factors (P and Q) to generate final scores for a single sample user."
         })
 
     def render(self):
@@ -50,22 +51,28 @@ class FunkSVDVisualizationRenderer(BaseVisualizationRenderer):
             st.info("No visualizations were generated for this run according to visuals.json.")
             return
 
-        # --- REFFACTORED LOGIC ---
-
+        # --- Render Convergence Plots (Adapted from ALS renderer) ---
         st.subheader("Convergence Plots")
 
-        # 1. Find and render factor change convergence plot
-        # FunkSVD typically only has factor change, not a general 'objective'
+        # 1. Find Objective plot (RMSE)
+        objective_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "Objective"), None)
+        # 2. Find Factor Change plot
         factor_change_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "Factor Change"), None)
 
-        if factor_change_plot:
-            generic_renderers.render_line_plot(self.run_dir, factor_change_plot, self.explanations, st)
+        col_conv1, col_conv2 = st.columns(2)
+        if objective_plot:
+            generic_renderers.render_line_plot(self.run_dir, objective_plot, self.explanations, col_conv1)
         else:
-            st.info("No factor change convergence plot found.")
+            col_conv1.info("No objective convergence plot (RMSE) found.")
+
+        if factor_change_plot:
+            generic_renderers.render_line_plot(self.run_dir, factor_change_plot, self.explanations, col_conv2)
+        else:
+            col_conv2.info("No factor change convergence plot found.")
 
         st.divider()
 
-        # 2. Find and render snapshots
+        # --- Render Snapshots (Original logic) ---
         snapshots = [e for e in manifest if e["type"] == "factor_snapshot"]
         snapshots.sort(key=lambda x: x["iteration"]) # Sort by iteration number
 
@@ -86,3 +93,17 @@ class FunkSVDVisualizationRenderer(BaseVisualizationRenderer):
                 generic_renderers.render_factor_snapshot(self.run_dir, last_snapshot, self.explanations, col_snap2)
         else:
             st.info("No latent factor snapshots found.")
+
+        st.divider()
+
+        # --- Render Recommendation Breakdown (Adapted from WRMF renderer) ---
+        st.subheader("Recommendation Breakdown")
+
+        breakdown_plot = next((e for e in manifest if e["type"] == "recommendation_breakdown"), None)
+
+        if breakdown_plot:
+            generic_renderers.render_recommendation_breakdown(
+                self.run_dir, breakdown_plot, self.explanations, st
+            )
+        else:
+            st.info("No recommendation breakdown plot was generated for this run.")

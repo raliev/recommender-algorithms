@@ -1,3 +1,8 @@
+---
+### Objective
+Shows the Root Mean Squared Error (RMSE) calculated on the *observed ratings* in the training set over iterations. A decreasing trend indicates the model is learning to better predict the known ratings and converging. Lower RMSE generally suggests better predictive accuracy on the training data.
+
+---
 ### Factor Change Norm Plot
 This plot shows the **rate of change** of the User (P) and Item (Q) factor matrices at each iteration, measured by the Frobenius norm.
 
@@ -37,3 +42,18 @@ This plot is only generated if you set **Latent Factors (k) = 2**. It plots ever
     * **Proximity:** In an explicit model like FunkSVD, the dot product of a user vector and an item vector predicts the rating. Users will be "near" items they rate highly (in a dot-product sense, not just Euclidean distance).
     * **Clusters:** You will see clusters of users with similar tastes and the clusters of items they prefer. For example, a group of "Sci-Fi Lovers" might be plotted in a similar region, and "Sci-Fi Movies" will be in a corresponding region that results in a high dot product.
     * **Comparison (First vs. Last Iteration):** The first iteration plot will show a random cloud of points. The last iteration plot should show this meaningful structure.
+
+---
+### Snapshots
+These plots visualize the distribution and relationships within the latent factor matrices (P for users, Q for items) at key iterations (usually the first and last).
+* **Heatmaps:** Show the magnitude of values within the factor matrices (sampled).
+* **Histograms:** Show the distribution of values within P and Q matrices.
+* **2D Latent Space (if k=2):** Plots users and items based on their first two latent factors. Proximity suggests similarity.
+  Comparing snapshots shows how the embeddings evolved.
+
+---
+### Recommendation Breakdown
+This visualization breaks down how FunkSVD uses the learned latent factors (P and Q) to generate final predicted rating scores for a single sample user using the dot product $P_u \cdot Q^T$.
+1.  **User History:** Shows the items the user has rated and the ratings given.
+2.  **Aggregated Scores:** Shows the predicted rating scores calculated as $P_u \cdot Q^T$. These scores directly represent the model's prediction for each item's rating by that user.
+3.  **Top-K Recommendations:** Highlights the items predicted to have the highest rating *that the user has not already rated*.

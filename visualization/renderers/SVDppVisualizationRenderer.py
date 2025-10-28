@@ -13,15 +13,13 @@ class SVDppVisualizationRenderer(BaseVisualizationRenderer): # Inherit from Base
     """
 
     def __init__(self, run_dir, explanations):
-        """Initialize the renderer."""
-        super().__init__(run_dir, explanations) # Pass explanations to base
+        super().__init__(run_dir, explanations)
         self.algorithm_name = "SVD++"
         self.run_timestamp = os.path.basename(run_dir)
-        # Add SVD++ specific explanations (including for Y)
         self.explanations.update({
+            "Objective": "Shows the Root Mean Squared Error (RMSE) calculated on the *observed ratings* in the training set over iterations. A decreasing trend indicates convergence.",
             "Factor Change": "Shows the Frobenius norm of the change in user (P), item (Q), and implicit item (Y) latent factor matrices between iterations. A decreasing trend indicates convergence.",
-            "Snapshots": "These plots visualize the distribution and relationships within the latent factor matrices (P, Q, and Y) at key iterations."
-            # Add or override more interpretations if needed
+            "Snapshots": "These plots visualize the distribution and relationships within the latent factor matrices (P, Q, and Y) at key iterations." 
         })
 
     def render(self):

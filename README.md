@@ -2,7 +2,7 @@
 
 > **Interactive companion app for [Recommender Algorithms in 2026: A Practitioner's Guide](https://testmysearch.com/books/recommender-algorithms.html)**
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.38+-red.svg)](https://streamlit.io)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Book](https://img.shields.io/badge/Book-Recommender%20Algorithms%20in%202026-orange.svg)](https://testmysearch.com/books/recommender-algorithms.html)
@@ -23,7 +23,7 @@ A comprehensive Streamlit application for experimenting with state-of-the-art re
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.12 or higher
 - pip package manager
 
 ### Installation

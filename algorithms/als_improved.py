@@ -42,7 +42,7 @@ class ALSImprovedRecommender(Recommender):
 
             # --- Update User Factors and Biases ---
             for u in range(num_users): #
-                # ... (user factor update logic remains the same) ... [cite: 434-436]
+                # ... (user factor update logic remains the same) ... 
                 rated_indices = np.where(rated_mask[u, :])[0]
                 if len(rated_indices) > 0:
                     Qu = self.Q[rated_indices, :]

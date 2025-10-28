@@ -28,4 +28,3 @@ This histogram shows the values of all the non-zero coefficients in $W$. It help
 ---
 ### SLIM Recommendation
 This plot explains **how a recommendation is made**. <br>1. **Top (Red)**: The user's original interaction history ($R_u$). <br>2. **Middle (Blue)**: The *aggregated scores* ($\tilde{R}_u = R_u \cdot W$). For each item $i$ the user liked, the model 'votes' for related items $j$ with the strength $W_{ij}$. This plot is the sum of all 'votes' from the user's history. <br>3. **Bottom (Green)**: The final Top-K recommendations, after filtering out items the user already liked.
-

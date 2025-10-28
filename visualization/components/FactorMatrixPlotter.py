@@ -1,6 +1,4 @@
-# visualization/components/FactorMatrixPlotter.py
 import os
-
 from .BasePlotter import BasePlotter
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -14,83 +12,149 @@ class FactorMatrixPlotter(BasePlotter):
 
     def plot_snapshot(self, P, Q, iter_num, interpretation_key, Y=None):
         """Plots heatmap, histogram, and (optionally) latent space."""
-
         plot_files = {} # To store generated filenames
 
-        # Plot Heatmaps
-        heatmap_p_file = self._plot_heatmap(P, f'User Factors P (Iter {iter_num})', f'P_iter_{iter_num}.png')
-        heatmap_q_file = self._plot_heatmap(Q.T, f'Item Factors Q.T (Iter {iter_num})', f'Q_T_iter_{iter_num}.png')
-        plot_files["heatmap_P"] = os.path.basename(heatmap_p_file)
-        plot_files["heatmap_Q"] = os.path.basename(heatmap_q_file)
-
+        # --- MODIFIED ---
+        # Plot Heatmaps only if matrices are not None
+        if P is not None:
+            heatmap_p_dict = self._plot_heatmap(P, f'User Factors P (Iter {iter_num})', f'P_iter_{iter_num}.png')
+            if heatmap_p_dict: # Check if plotting was successful
+                plot_files["heatmap_P"] = heatmap_p_dict["file"]
+        if Q is not None:
+            heatmap_q_dict = self._plot_heatmap(Q.T, f'Item Factors Q.T (Iter {iter_num})', f'Q_T_iter_{iter_num}.png')
+            if heatmap_q_dict:
+                plot_files["heatmap_Q"] = heatmap_q_dict["file"]
         if Y is not None:
-            heatmap_y_file = self._plot_heatmap(Y.T, f'Implicit Item Factors Y.T (Iter {iter_num})', f'Y_T_iter_{iter_num}.png')
-            plot_files["heatmap_Y"] = os.path.basename(heatmap_y_file)
+            heatmap_y_dict = self._plot_heatmap(Y.T, f'Implicit Item Factors Y.T (Iter {iter_num})', f'Y_T_iter_{iter_num}.png')
+            if heatmap_y_dict:
+                plot_files["heatmap_Y"] = heatmap_y_dict["file"]
+        # --- END MODIFIED ---
 
-        hist_file = self._plot_histograms(P, Q, f'Latent Factor Histograms (Iter {iter_num})', f'hist_iter_{iter_num}.png', Y=Y) 
-        plot_files["histogram"] = os.path.basename(hist_file)
+        # Plot Histograms only if matrices are not None
+        hist_file = self._plot_histograms(P, Q, f'Latent Factor Histograms (Iter {iter_num})', f'hist_iter_{iter_num}.png', Y=Y)
+        if hist_file: # Check if plotting was successful
+            plot_files["histogram"] = os.path.basename(hist_file)
 
-        # Plot 2D Latent Space (if k=2) - No change needed here
-        if self.k_factors == 2:
+        # Plot Latent Space only if k=2 AND both P and Q are not None
+        if self.k_factors == 2 and P is not None and Q is not None:
             latent_file = self._plot_latent_space(P, Q, f'2D Latent Space (Iter {iter_num})', f'latent_space_iter_{iter_num}.png')
-            plot_files["latent_2d"] = os.path.basename(latent_file)
+            if latent_file: # Check if plotting was successful
+                plot_files["latent_2d"] = os.path.basename(latent_file)
 
-        # Return manifest entry
-        return { # 
-            "name": f"Snapshot: Iteration {iter_num}",
-            "type": "factor_snapshot",
-            "iteration": iter_num,
-            "files": plot_files,
-            "interpretation_key": interpretation_key
-        }
+        # Return manifest entry only if some plots were generated
+        if plot_files:
+            return { #
+                "name": f"Snapshot: Iteration {iter_num}",
+                "type": "factor_snapshot",
+                "iteration": iter_num,
+                "files": plot_files,
+                "interpretation_key": interpretation_key
+            }
+        else:
+            return None # Return None if no plots were generated
 
-    def _plot_heatmap(self, matrix, title, filename, sample_size=50): # 
+
+    def _plot_heatmap(self, matrix, title, filename, sample_size=50): #
+        # --- ADD CHECK FOR NONE ---
+        if matrix is None:
+            print(f"Warning: Skipping heatmap '{title}' because input matrix is None.")
+            return None # Return None if matrix is None
+        # --- END CHECK ---
+
         fig, ax = plt.subplots(figsize=(10, 8))
         data_to_plot = matrix
-        if sample_size and matrix.shape[0] > sample_size and matrix.shape[1] > sample_size:
+        plot_title = title # Use a separate variable for the title potentially modified by sampling
+        # --- Add check for matrix dimensions before sampling ---
+        if sample_size and matrix.ndim == 2 and matrix.shape[0] > sample_size and matrix.shape[1] > sample_size:
             row_indices = np.random.choice(matrix.shape[0], sample_size, replace=False)
             col_indices = np.random.choice(matrix.shape[1], sample_size, replace=False)
             data_to_plot = matrix[np.ix_(row_indices, col_indices)]
-            title += f" (Sample {sample_size}x{sample_size})"
+            plot_title += f" (Sample {sample_size}x{sample_size})" # Modify plot_title
+        elif matrix.ndim != 2:
+            print(f"Warning: Skipping heatmap sampling for '{title}' as matrix is not 2D (shape: {matrix.shape}).")
+            # Continue to plot the original matrix if possible, or handle appropriately
+            if matrix.ndim == 1: # Attempt to reshape 1D arrays if meaningful
+                try:
+                    # Heuristic: Reshape assuming it's one row or one column
+                    if matrix.shape[0] > 1: data_to_plot = matrix[:, np.newaxis]
+                    else: data_to_plot = matrix[np.newaxis, :]
+                    print(f"Reshaped 1D array to {data_to_plot.shape} for heatmap.")
+                except:
+                    ax.text(0.5, 0.5, 'Invalid matrix shape for heatmap', ha='center', va='center')
+                    file_path = self._save_plot(fig, filename)
+                    return None # Cannot plot
 
-        sns.heatmap(data_to_plot, cmap="viridis", ax=ax) # 
-        ax.set_title(title)
+        # --- Check data_to_plot is valid before plotting ---
+        if data_to_plot is None or not isinstance(data_to_plot, np.ndarray) or data_to_plot.ndim != 2:
+            print(f"Warning: Final data for heatmap '{title}' is invalid. Skipping plot.")
+            plt.close(fig) # Close the figure
+            return None
+
+        sns.heatmap(data_to_plot, cmap="viridis", ax=ax) #
+        ax.set_title(plot_title) # Use potentially modified title
+        # Adjust labels based on actual plotted data shape
         ax.set_xlabel("Latent Factors" if data_to_plot.shape[1] == self.k_factors else "Items/Users")
         ax.set_ylabel("Users/Items" if data_to_plot.shape[1] == self.k_factors else "Latent Factors")
         plt.tight_layout()
-        return self._save_plot(fig, filename)
+
+        file_path = self._save_plot(fig, filename) # Save plot and get path
+
+        return {
+            "name": plot_title, # Use the potentially modified title
+            "type": "similarity_heatmap", # Default type, can be overridden later
+            "file": os.path.basename(file_path),
+            "interpretation_key": None # Placeholder, should be set by caller if needed
+        }
+
 
     def _plot_histograms(self, P, Q, title, filename, Y=None):
-        # --- Adjust subplot layout based on Y ---
-        num_plots = 3 if Y is not None else 2
-        fig_width = 18 if Y is not None else 12
-        fig, axes = plt.subplots(1, num_plots, figsize=(fig_width, 5))
+        # --- Determine which matrices are available ---
+        available_matrices = {}
+        if P is not None: available_matrices['P (User Factors)'] = P
+        if Q is not None: available_matrices['Q (Item Factors)'] = Q
+        if Y is not None: available_matrices['Y (Implicit Item Factors)'] = Y
+
+        if not available_matrices:
+            print(f"Warning: Skipping histograms '{title}' as no valid matrices provided.")
+            return None # Return None if no matrices
+
+        # --- Adjust subplot layout based on available matrices ---
+        num_plots = len(available_matrices)
+        fig_width = 6 * num_plots
+        fig, axes = plt.subplots(1, num_plots, figsize=(fig_width, 5), squeeze=False) # Ensure axes is always 2D
         # --- End Adjust ---
 
-        ax1 = axes[0]
-        ax1.hist(P.flatten(), bins=50, alpha=0.7)
-        ax1.set_title('User Factors (P) Value Distribution') # 
-        ax1.set_xlabel('Value')
-        ax1.set_ylabel('Frequency')
+        # Plot histograms for available matrices
+        ax_idx = 0
+        for name, matrix in available_matrices.items():
+            ax = axes[0, ax_idx] # Access axes correctly
+            try:
+                values = matrix.flatten()
+                if values.size > 0:
+                    ax.hist(values, bins=50, alpha=0.7)
+                else:
+                    ax.text(0.5, 0.5, 'No data', ha='center', va='center')
+            except AttributeError: # Handle case where matrix might not be flattenable (though unlikely if not None)
+                ax.text(0.5, 0.5, 'Invalid data', ha='center', va='center')
 
-        ax2 = axes[1]
-        ax2.hist(Q.flatten(), bins=50, alpha=0.7)
-        ax2.set_title('Item Factors (Q) Value Distribution')
-        ax2.set_xlabel('Value')
-        ax2.set_ylabel('Frequency')
+            ax.set_title(f'{name} Value Distribution') #
+            ax.set_xlabel('Value')
+            ax.set_ylabel('Frequency')
+            ax_idx += 1
 
-        if Y is not None:
-            ax3 = axes[2]
-            ax3.hist(Y.flatten(), bins=50, alpha=0.7)
-            ax3.set_title('Implicit Item Factors (Y) Value Distribution')
-            ax3.set_xlabel('Value')
-            ax3.set_ylabel('Frequency')
 
         fig.suptitle(title)
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        return self._save_plot(fig, filename)
+        return self._save_plot(fig, filename) # Return the file path
 
-    def _plot_latent_space(self, P, Q, title, filename): # 
+    def _plot_latent_space(self, P, Q, title, filename): #
+        # --- ADD CHECK FOR NONE ---
+        # This function requires both P and Q, and k=2
+        if P is None or Q is None or self.k_factors != 2:
+            # print(f"Warning: Skipping 2D latent space plot '{title}'. Requires k=2 and non-None P and Q.")
+            return None # Return None if conditions not met
+        # --- END CHECK ---
+
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.scatter(P[:, 0], P[:, 1], alpha=0.5, label='Users')
         ax.scatter(Q[:, 0], Q[:, 1], alpha=0.5, label='Items')
@@ -101,4 +165,4 @@ class FactorMatrixPlotter(BasePlotter):
         ax.legend()
         ax.grid(True)
         plt.tight_layout()
-        return self._save_plot(fig, filename)
+        return self._save_plot(fig, filename) # Return the file path
