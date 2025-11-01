@@ -1,8 +1,20 @@
 import streamlit as st
+
+from utils import cleanup_old_reports
+
 st.set_page_config(
     page_title="Recommender System Lab",
     layout="wide"
 )
+
+if 'cleanup_done' not in st.session_state:
+    try:
+        deleted_count = cleanup_old_reports(max_age_hours=24)
+        if deleted_count > 0:
+            st.toast(f"🧹 Cleaned up {deleted_count} old reports/visuals.")
+    except Exception as e:
+        st.toast(f"Cleanup failed: {e}")
+    st.session_state.cleanup_done = True
 
 link_url = "https://testmysearch.com/books/recommender-algorithms.html"
 image_url = "https://testmysearch.com/img/ra-ws.jpg"

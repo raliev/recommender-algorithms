@@ -1,4 +1,5 @@
 # algorithms/__init__.py
+from .bpr_adaptive import BPRAdaptiveRecommender
 from .svd import SVDRecommender
 from .als import ALSRecommender
 from .bpr import BPRRecommender
@@ -24,6 +25,7 @@ __all__ = [
     'SVDRecommender',
     'ALSRecommender',
     'BPRRecommender',
+    'BPRAdaptiveRecommender',
     'ALSImprovedRecommender',
     'ItemKNNRecommender',
     'SlopeOneRecommender',

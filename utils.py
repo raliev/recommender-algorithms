@@ -1,4 +1,9 @@
-# app/utils.py
+import datetime
+import glob
+import os
+import shutil
+from datetime import datetime, timedelta
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -96,7 +101,9 @@ def calculate_regression_metrics(predicted_df, test_df):
     }
 
 
-def precision_recall_at_k(predicted_scores_df, test_df, k=10):
+
+# 1. Добавьте train_df в сигнатуру функции
+def precision_recall_at_k(predicted_scores_df, test_df, train_df, k=10):
     precisions = []
     recalls = []
     for user_id in test_df.index:
@@ -105,12 +112,49 @@ def precision_recall_at_k(predicted_scores_df, test_df, k=10):
         if not relevant_items:
             continue
         predicted_scores = predicted_scores_df.loc[user_id]
-        train_ratings = predicted_scores_df.columns.difference(test_ratings.index)
-        predicted_scores = predicted_scores.drop(train_ratings, errors='ignore')
-        top_k_items = set(predicted_scores.nlargest(k).index)
+        train_ratings_row = train_df.loc[user_id]
+        seen_items = set(train_ratings_row[train_ratings_row > 0].index)
+        scores_for_unseen = predicted_scores.drop(seen_items, errors='ignore')
+
+        top_k_items = set(scores_for_unseen.nlargest(k).index)
+
         hits = len(top_k_items.intersection(relevant_items))
+
         precision = hits / k if k > 0 else 0
         recall = hits / len(relevant_items) if len(relevant_items) > 0 else 0
         precisions.append(precision)
         recalls.append(recall)
     return np.mean(precisions), np.mean(recalls)
+
+def cleanup_old_reports(max_age_hours=24):
+    """
+    Deletes report and visualization directories older than max_age_hours.
+    """
+    st.toast(f"Running cleanup for files older than {max_age_hours} hours...")
+    cutoff = datetime.now() - timedelta(hours=max_age_hours)
+    deleted_count = 0
+
+    # Directories to scan
+    report_dirs = glob.glob('reports/report-*')
+    viz_dirs = glob.glob('visuals/*/*')
+
+    all_dirs = report_dirs + viz_dirs
+
+    if not all_dirs:
+        return 0
+
+    for dir_path in all_dirs:
+        try:
+            # Check modification time
+            mod_time = os.path.getmtime(dir_path)
+            if datetime.fromtimestamp(mod_time) < cutoff:
+                if os.path.isdir(dir_path):
+                    shutil.rmtree(dir_path)
+                    deleted_count += 1
+        except FileNotFoundError:
+            pass # Already deleted
+        except Exception as e:
+            # This might fail on Windows if a file is in use
+            print(f"Could not delete {dir_path}: {e}")
+
+    return deleted_count

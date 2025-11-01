@@ -8,7 +8,8 @@ import itertools
 import random
 import matplotlib.pyplot as plt
 import seaborn as sns
-import optuna # Import Optuna
+import optuna
+from algorithm_config import ALGORITHM_CONFIG
 
 from utils import download_and_load_movielens, load_synthetic_data, split_data, calculate_regression_metrics, precision_recall_at_k
 from algorithms import *
@@ -60,12 +61,7 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
     completed_iterations = 0
     total_iterations = len(configured_params) * n_trials
 
-    model_map = {
-        "SVD": SVDRecommender, "ALS": ALSRecommender, "ALS (Improved)": ALSImprovedRecommender,
-        "ALS (PySpark)": ALSPySparkRecommender,
-        "BPR": BPRRecommender, "ItemKNN": ItemKNNRecommender, "UserKNN": UserKNNRecommender,
-        "NMF": NMFRecommender, "FunkSVD": FunkSVDRecommender, "SVD++": SVDppRecommender, "WRMF": WRMFRecommender,
-    }
+
 
     for algo_idx, (algo_name, params) in enumerate(configured_params.items()):
 
@@ -87,7 +83,9 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
 
             start_time = time.time()
             try:
-                model_class = model_map.get(algo_name)
+                algo_config = ALGORITHM_CONFIG.get(algo_name)
+                model_class = algo_config.get("model_class") if algo_config else None
+
                 if not model_class:
                     st.warning(f"Algorithm {algo_name} not found. Skipping.")
                     return float('inf') # Return a high value for minimization
