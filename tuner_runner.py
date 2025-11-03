@@ -11,7 +11,15 @@ import seaborn as sns
 import optuna
 from algorithm_config import ALGORITHM_CONFIG
 
-from utils import download_and_load_movielens, load_synthetic_data, split_data, calculate_regression_metrics, precision_recall_at_k
+from utils import (
+    download_and_load_movielens,
+    load_synthetic_data,
+    load_generated_data,
+    get_generated_datasets,
+    split_data,
+    calculate_regression_metrics,
+    precision_recall_at_k
+)
 from algorithms import *
 
 def run_tuning_process(configured_params, data_source, data_params, n_trials):
@@ -27,6 +35,7 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
 
     # Prepare Data ---
     with st.spinner("Preparing data..."):
+        generated_dataset_names = get_generated_datasets()
         if data_source == "Load MovieLens CSV":
             full_df, _ = download_and_load_movielens()
             if full_df is not None:
@@ -40,12 +49,17 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
                 data_to_use = df_filtered_movies.loc[top_users_ids]
         elif data_source == "Synthetic 20x20":
             data_to_use, _, _ = load_synthetic_data()
-
+        elif data_source in generated_dataset_names:
+            # --- MODIFIED: Now receives 4 variables, but we only need 1 ---
+            data_to_use, _, _, _ = load_generated_data(data_source)
+            if data_to_use is None:
+                st.error(f"Failed to load generated dataset '{data_source}'.")
+                st.stop()
         if data_to_use is None:
             st.error("Failed to load data."); st.stop()
         train_df, test_df = split_data(data_to_use)
         data_to_train = train_df.to_numpy()
-    st.success(f"Data prepared: {data_to_use.shape[0]} users, {data_to_use.shape[1]} movies.")
+    st.success(f"Data prepared: {data_to_use.shape[0]} users, {data_to_use.shape[1]} items.")
 
     # UI Placeholders ---
     st.subheader("Progress")
@@ -95,8 +109,10 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
                 predicted_matrix = model.predict()
                 predicted_df = pd.DataFrame(predicted_matrix, index=data_to_use.index, columns=data_to_use.columns)
 
-                if algo_name in ["BPR", "WRMF"]:
-                    metrics = {'type': 'implicit', **precision_recall_at_k(predicted_df, test_df)}
+                # --- MODIFIED: Corrected logic for implicit models ---
+                implicit_models = ["BPR", "WRMF", "CML", "NCFNeuMF", "SASRec", "VAE", "SLIM", "FISM", "BPR (Adaptive)"]
+                if algo_name in implicit_models:
+                    metrics = {'type': 'implicit', **precision_recall_at_k(predicted_df, test_df, train_df)} # Pass train_df
                     primary_metric = 'precision'
                     value_to_optimize = -metrics[primary_metric] # Optuna minimizes, so negate precision
                 else:
@@ -126,7 +142,10 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
                 return float('inf') # Error case
 
         # Create and Run Optuna Study
-        is_minimizing = not (algo_name in ["BPR", "WRMF"]) # Precision needs maximization
+        # --- MODIFIED: Corrected logic for minimization/maximization ---
+        implicit_models = ["BPR", "WRMF", "CML", "NCFNeuMF", "SASRec", "VAE", "SLIM", "FISM", "BPR (Adaptive)"]
+        is_minimizing = not (algo_name in implicit_models) # Precision needs maximization
+
         study = optuna.create_study(direction="minimize" if is_minimizing else "maximize")
         study.optimize(objective, n_trials=n_trials, callbacks=[lambda study, trial: algo_progress_bar.progress( (trial.number + 1) / n_trials )] )
 

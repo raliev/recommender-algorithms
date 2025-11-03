@@ -158,3 +158,48 @@ def cleanup_old_reports(max_age_hours=24):
             print(f"Could not delete {dir_path}: {e}")
 
     return deleted_count
+
+@st.cache_data
+def load_generated_data(dataset_name):
+    """
+    Loads a specific generated dataset from datasets/generated/[dataset_name]
+    """
+    base_path = os.path.join("datasets", "generated", dataset_name)
+    try:
+        ratings_path = os.path.join(base_path, "ratings.csv")
+        movies_path = os.path.join(base_path, "movies.csv")
+        user_profiles_path = os.path.join(base_path, "ground_truth_user_profiles.csv")
+        item_features_path = os.path.join(base_path, "ground_truth_item_features.csv") # --- ADDED ---
+
+        # Load ratings - it's already pivoted
+        ratings_pivot_df = pd.read_csv(ratings_path, index_col=0)
+
+        movies_df = pd.read_csv(movies_path, index_col=0)
+
+        user_profiles_df = pd.read_csv(user_profiles_path, index_col=0)
+
+        item_features_df = pd.read_csv(item_features_path, index_col=0) # --- ADDED ---
+
+    except FileNotFoundError as e:
+        st.error(f"Could not find dataset file: {e}. Please ensure '{dataset_name}' exists in `datasets/generated/`.")
+        return None, None, None, None # --- MODIFIED ---
+    except Exception as e:
+        st.error(f"Error loading generated dataset '{dataset_name}': {e}")
+        return None, None, None, None # --- MODIFIED ---
+
+    return ratings_pivot_df, movies_df, user_profiles_df, item_features_df # --- MODIFIED ---
+
+def get_generated_datasets():
+    """
+    Scans the datasets/generated/ directory and returns a list of dataset names.
+    """
+    base_dir = os.path.join("datasets", "generated")
+    if not os.path.isdir(base_dir):
+        return []
+
+    try:
+        dataset_names = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
+        return sorted(dataset_names)
+    except Exception as e:
+        print(f"Error scanning for generated datasets: {e}")
+        return []

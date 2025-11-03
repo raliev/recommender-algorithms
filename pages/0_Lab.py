@@ -14,6 +14,8 @@ from algorithm_config import ALGORITHM_CONFIG
 from utils import (
     download_and_load_movielens,
     load_synthetic_data,
+    load_generated_data,
+    get_generated_datasets,
     split_data,
     calculate_regression_metrics,
     precision_recall_at_k
@@ -30,6 +32,7 @@ if 'user_profiles' not in st.session_state: st.session_state['user_profiles'] = 
 # --- NEW: State for selected run ---
 if 'selected_visuals_run_dir' not in st.session_state:
     st.session_state.selected_visuals_run_dir = None
+if 'Q_matrix' not in st.session_state: st.session_state['Q_matrix'] = None # --- ADDED ---
 
 data_source, data, algorithm, model_params, data_params, run_button, show_internals = render_sidebar()
 
@@ -42,12 +45,13 @@ if run_button:
     data_to_use = None
     data_to_train = None
     test_df = None
-
+    generated_dataset_names = get_generated_datasets()
     with st.spinner("Preparing data..."):
         if data_source == "MovieLens (Filtered Subset)":
             full_df, movie_titles_df = download_and_load_movielens()
             st.session_state['movie_titles'] = movie_titles_df
             st.session_state['user_profiles'] = None
+            st.session_state['Q_matrix'] = None # --- ADDED ---
             if full_df is not None:
                 num_users = data_params.get('num_users', 100)
                 num_movies = data_params.get('num_movies', 500)
@@ -65,18 +69,31 @@ if run_button:
             full_df, movie_titles_df = download_and_load_movielens()
             st.session_state['movie_titles'] = movie_titles_df
             st.session_state['user_profiles'] = None
+            st.session_state['Q_matrix'] = None # --- ADDED ---
             if full_df is not None:
                 data_to_use = full_df
                 st.warning("️️[!] You are using the full dataset. Calculations may be very slow...")
                 st.write(f"Using the full dataset: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
                 train_df, test_df = split_data(data_to_use)
                 data_to_train = train_df.to_numpy()
-
+        elif data_source in generated_dataset_names:
+            # --- MODIFIED: Now receives 4 variables ---
+            full_df, movie_titles_df, user_profiles_df, q_matrix_df = load_generated_data(data_source)
+            if full_df is not None:
+                st.session_state['movie_titles'] = movie_titles_df
+                st.session_state['user_profiles'] = user_profiles_df # This now holds the ground truth P matrix
+                st.session_state['Q_matrix'] = q_matrix_df # --- ADDED: Store Q matrix ---
+                data_to_use = full_df
+                st.write(f"Using generated dataset '{data_source}': **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
+                # Split the loaded data to create train/test sets
+                train_df, test_df = split_data(data_to_use)
+                data_to_train = train_df.to_numpy()
         elif data_source == "Synthetic 20x20":
             full_df, movie_titles_df, user_profiles_df = load_synthetic_data()
             if full_df is not None:
                 st.session_state['movie_titles'] = movie_titles_df
                 st.session_state['user_profiles'] = user_profiles_df
+                st.session_state['Q_matrix'] = None # --- ADDED: No Q for synthetic 20x20 ---
                 data_to_use = full_df
                 st.write(f"Using the synthetic dataset: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
                 train_df, test_df = split_data(data_to_use)
@@ -182,12 +199,17 @@ if run_button:
         st.session_state.selected_visuals_run_dir = st.session_state['results']['visuals_dir']
         st.rerun() # Rerun to show the new results immediately
 
-if st.session_state.get('results') and st.session_state.selected_visuals_run_dir == st.session_state['results'].get('visuals_dir'):    # This block runs if we just completed a run
+if st.session_state.get('results') and st.session_state.selected_visuals_run_dir == st.session_state['results'].get('visuals_dir'):
+    # This block runs if we just completed a run
+
+    # --- MODIFIED: Add Q_matrix to the results dictionary ---
     results_with_titles = {
         **st.session_state['results'],
         'movie_titles': st.session_state.get('movie_titles'),
-        'user_profiles': st.session_state.get('user_profiles')
+        'user_profiles': st.session_state.get('user_profiles'),
+        'Q_matrix': st.session_state.get('Q_matrix') # --- ADDED THIS LINE ---
     }
+
     if st.session_state['metrics']:
         main_tabs = st.tabs(["Results", "Performance", "Visualizations"])
         with main_tabs[0]:
@@ -229,6 +251,7 @@ elif st.session_state.get('selected_visuals_run_dir'):
             st.error(f"Error loading metrics.json: {e}")
     else:
         st.info("No performance metrics (metrics.json) were saved for this run.")
+
     # Manually build minimal info for render_visualizations_tab
     results_for_viz = {
         'algo_name': algorithm,

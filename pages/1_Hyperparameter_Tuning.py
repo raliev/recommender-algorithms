@@ -4,15 +4,20 @@ import pandas as pd
 import numpy as np
 from tuner_config import TUNER_CONFIG
 from tuner_runner import run_tuning_process
+from utils import get_generated_datasets
 
 st.set_page_config(page_title="Hyperparameter Tuning", layout="wide")
 st.title("Hyperparameter Tuning")
 
 # --- DATA SELECTION ---
 st.sidebar.header("Data Source")
+base_data_options = ["Synthetic 20x20", "Load MovieLens CSV"]
+generated_data_options = get_generated_datasets()
+all_data_options = base_data_options + generated_data_options
 data_source = st.sidebar.radio(
     "Select Data Source",
-    ["Synthetic 20x20", "Load MovieLens CSV"],
+#    ["Synthetic 20x20", "Load MovieLens CSV"],
+    all_data_options,
     key="tuner_data_source"
 )
 
@@ -20,7 +25,8 @@ data_params = {}
 if data_source == "Load MovieLens CSV":
     data_params['num_users'] = st.sidebar.slider("Number of Users", 50, 610, 100)
     data_params['num_movies'] = st.sidebar.slider("Number of Movies", 100, 2000, 500)
-
+elif data_source in generated_data_options:
+    st.sidebar.info(f"Using your custom generated dataset: '{data_source}'")
 st.sidebar.header("Algorithm Selection")
 selected_algorithms = {}
 for algo_name, params in TUNER_CONFIG.items():

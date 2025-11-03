@@ -37,5 +37,10 @@ with st.sidebar:
 
     st.sidebar.divider()
 
-st.title("Recommender System Laboratory & Tuner")
-st.info("Select a page from the sidebar to get started.")
+    st.title("Recommender System Laboratory & Tuner")
+    st.info("""Select a page from the sidebar to get started:
+        - **Lab**: Interactively train and visualize a single algorithm.
+        - **Hyperparameter Tuning**: Run automated (Optuna) tuning for one or more algorithms.
+        - **Dataset Wizard**: Create and save your own synthetic datasets.
+        - **Report Viewer**: View the results from past tuning runs.
+        """)

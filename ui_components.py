@@ -2,13 +2,14 @@ import glob
 import json
 import os
 import re
-
+from sklearn.preprocessing import MinMaxScaler
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from algorithm_config import ALGORITHM_CONFIG, WIDGET_MAP
 from visualization.renderers.BaseVisualizationRenderer import BaseVisualizationRenderer
+from utils import get_generated_datasets
 
 def update_selected_run_dir(key_name, options_dict):
     """Callback to update session state with the DIR PATH, not the display name."""
@@ -31,10 +32,10 @@ def render_sidebar():
         with col1:
             st.markdown(
                 f"""
-                    <a href="{link_url}" target="_blank">
-                        <img src="{image_url}" alt="Book Cover" style="width:100%; max-width: 100px; border-radius: 5px;">
-                    </a>
-                    """,
+                <a href="{link_url}" target="_blank">
+                    <img src="{image_url}" alt="Book Cover" style="width:100%; max-width: 100px; border-radius: 5px;">
+                </a>
+                """,
                 unsafe_allow_html=True
             )
 
@@ -44,10 +45,14 @@ def render_sidebar():
 
     st.sidebar.divider()
     st.sidebar.header("Controls")
+    base_data_options = ["Synthetic 20x20", "MovieLens (Filtered Subset)", "MovieLens (Full Dataset)"]
+    generated_data_options = get_generated_datasets() # Get list of names
+    all_data_options = base_data_options + generated_data_options
+
     data_source = st.sidebar.radio(
         "Select Data Source",
-        ["Synthetic 20x20", "MovieLens (Filtered Subset)", "MovieLens (Full Dataset)"],
-        help="Choose between the synthetic data, a fast filtered subset, or the complete (slower) MovieLens dataset."
+        all_data_options,
+        help="Choose between synthetic data, MovieLens, or a custom-generated dataset."
     )
     algorithm_names = list(ALGORITHM_CONFIG.keys())
     algorithm = st.sidebar.selectbox(
@@ -70,7 +75,8 @@ def render_sidebar():
         st.sidebar.info("Using your generated 20x20 synthetic dataset.")
     elif data_source == "MovieLens (Full Dataset)":
         st.sidebar.info("Using the complete, unfiltered MovieLens dataset. This may be slow.")
-
+    elif data_source in generated_data_options:
+        st.sidebar.info(f"Using your custom generated dataset: '{data_source}'")
     st.sidebar.subheader(f"2. {algorithm} Hyperparameters")
     algo_info = ALGORITHM_CONFIG[algorithm].get("info")
     if algo_info:
@@ -244,9 +250,21 @@ def get_movie_title(movie_id, movie_titles_df):
     if movie_titles_df is None:
         return f"Movie ID: {movie_id}"
     try:
-        return movie_titles_df.loc[movie_id, 'title']
+        # Check if movie_id is in the index
+        if movie_id in movie_titles_df.index:
+            return movie_titles_df.loc[movie_id, 'title']
+        else:
+            # Fallback for generated datasets where index might be the title itself
+            if movie_id in movie_titles_df['title'].values:
+                return movie_id
+            return f"Movie ID: {movie_id} (Unknown)"
     except KeyError:
         return f"Movie ID: {movie_id} (Unknown)"
+    except Exception:
+        # Handle cases where movie_id might be a string for generated data
+        if isinstance(movie_id, str) and movie_id in movie_titles_df['title'].values:
+            return movie_id
+        return f"Movie ID: {movie_id} (Error)"
 
 
 @st.cache_data
@@ -284,18 +302,28 @@ def load_visualization_info(algo_name):
 def render_results_tabs(results):
     st.header("Results")
     tab1, tab2, tab3 = st.tabs(["Model Internals", "Predictions", "Recommendations"])
+
     movie_titles_df = results.get('movie_titles')
+
+    # Helper to rename columns from movie_id to title
     def rename_columns_to_titles(df):
-        if movie_titles_df is not None and not df.columns.is_numeric():
+        if movie_titles_df is None:
             return df
-        if movie_titles_df is not None:
+
+        # Check if columns are numeric (like MovieLens) or strings (like generated data)
+        if pd.api.types.is_numeric_dtype(df.columns):
+            # MovieLens logic
             title_map = {mid: get_movie_title(mid, movie_titles_df) for mid in df.columns}
             return df.rename(columns=title_map)
-        return df
+        else:
+            # Generated data logic (columns are already titles)
+            return df
+
     with tab1:
         st.subheader(f"Inside the {results['algo_name']} Model")
         algo_config = ALGORITHM_CONFIG.get(results['algo_name'], {})
         result_type = algo_config.get("result_type", "other")
+
         if result_type == "matrix_factorization":
             st.write("These models decompose the original matrix into User-Factors (P) and Item-Factors (Q).")
             if results.get('P') is not None and results.get('Q') is not None:
@@ -306,9 +334,11 @@ def render_results_tabs(results):
                 with col2: st.write("**Q (Items x Factors)**"); st.dataframe(q_df_renamed.style.format("{:.2f}"))
             else:
                 st.info(f"{results['algo_name']} does not expose user/item factor matrices in a simple format.")
+
         elif result_type == "knn_similarity":
             st.write("These models compute or learn a **Similarity Matrix** to find similar users or items.")
             sim_matrix = results.get('similarity_matrix')
+
             if sim_matrix is not None:
                 df = pd.DataFrame(sim_matrix)
                 if results['algo_name'] in ["ItemKNN", "SLIM", "FISM"]:
@@ -319,6 +349,7 @@ def render_results_tabs(results):
                     df.index = results['original_df'].index
                     df.columns = results['original_df'].index
                 st.write(f"**Learned Similarity Matrix (subset)**")
+
                 max_dim = 25
                 if df.shape[0] > max_dim:
                     st.info(f"Displaying a {max_dim}x{max_dim} subset of the full similarity matrix.")
@@ -329,6 +360,7 @@ def render_results_tabs(results):
                 st.plotly_chart(fig)
             else:
                 st.info("Similarity matrix not available.")
+
         elif result_type == "vae":
             st.write("Autoencoder models learn to **reconstruct** a user's interaction history from a compressed latent representation.")
             recon_matrix = results.get('reconstructed_matrix')
@@ -336,8 +368,14 @@ def render_results_tabs(results):
                 user_list = results['original_df'].index
                 selected_user = st.selectbox("Select a User to Visualize:", options=user_list)
                 original_vec = results['original_df'].loc[selected_user]
-                user_list_as_list = list(user_list)
-                user_index = user_list_as_list.index(selected_user)
+
+                # Handle both numeric and string user lists
+                if pd.api.types.is_numeric_dtype(user_list):
+                    user_list_as_list = list(user_list)
+                    user_index = user_list_as_list.index(selected_user)
+                else:
+                    user_index = user_list.get_loc(selected_user)
+
                 recon_vec = pd.Series(recon_matrix[user_index], index=original_vec.index)
                 rated_items = original_vec[original_vec > 0].index
                 top_unrated_recon = recon_vec.drop(rated_items).nlargest(10).index
@@ -347,55 +385,257 @@ def render_results_tabs(results):
                 fig = px.bar(vis_df, barmode='group', title=f"Original vs. Reconstructed Interactions for User {selected_user}")
                 st.plotly_chart(fig)
             else: st.info("Reconstructed matrix not available.")
+
         else:
             st.info(f"No specific internal visualization is available for {results['algo_name']}.")
+
     with tab2:
         st.subheader("Original Data vs. Predicted Scores")
-        if results['algo_name'] == 'BPR': st.warning("Reminder: BPR outputs scores for ranking, not predicted ratings.")
+        if 'BPR' in results['algo_name']: st.warning("Reminder: BPR outputs scores for ranking, not predicted ratings.")
+
         original_df, predicted_df = results['original_df'], results['predicted_df']
         max_users, max_items = 20, 20
+
         original_df_renamed = rename_columns_to_titles(original_df)
         predicted_df_renamed = rename_columns_to_titles(predicted_df)
+
         if original_df.shape[0] > max_users or original_df.shape[1] > max_items:
             st.info(f"Displaying a subset ({max_users} users, {max_items} items) of the full matrix for performance.")
             display_original_df = original_df_renamed.iloc[:max_users, :max_items]
             display_predicted_df = predicted_df_renamed.iloc[:max_users, :max_items]
         else:
             display_original_df, display_predicted_df = original_df_renamed, predicted_df_renamed
+
         col1, col2 = st.columns(2)
         with col1:
             st.write("**Original Data (subset)**")
             st.dataframe(display_original_df)
         with col2:
             st.write("**Predictions (subset, new items highlighted)**")
+
             def style_predictions(row):
                 original_row = display_original_df.loc[row.name]
                 highlight = 'background-color: #d1ecf1; color: #0c5460; font-weight: bold;'
                 return [highlight if original_row[col] == 0 else '' for col in original_row.index]
+
             st.dataframe(display_predicted_df.style.format("{:.2f}").apply(style_predictions, axis=1))
+
+        # --- MODIFIED BLOCK: Show P, Q, and new Expectation Matrix ---
+        is_generated_dataset = results.get('user_profiles') is not None and results.get('Q_matrix') is not None
+        if is_generated_dataset:
+            st.divider()
+            st.subheader("Ground Truth Analysis (for reference only)")
+            st.info("The following matrices were used to **generate** this dataset. They were **not** passed to the recommender.")
+
+            p_matrix = results.get('user_profiles')
+            q_matrix = results.get('Q_matrix')
+
+            # Get the same user/item indices/names as the displayed subsets
+            user_subset_index = display_original_df.index
+            item_subset_index = display_original_df.columns
+
+            # Filter P and Q
+            P_subset = p_matrix.loc[user_subset_index] # Selects rows (users)
+            Q_subset = q_matrix.loc[item_subset_index] # Selects rows (items)
+            R_pred_subset = display_predicted_df
+
+            col3, col4 = st.columns(2)
+            with col3:
+                st.write("**P (User-Preference) Matrix (subset)**")
+                st.dataframe(P_subset.style.format("{:.2f}").background_gradient(cmap='viridis', axis=None, vmin=-1, vmax=1), use_container_width=True)
+            with col4:
+                st.write("**Q (Item-Feature) Matrix (subset)**")
+                st.dataframe(Q_subset.style.format("{:.0f}"), use_container_width=True)
+
+            # --- NEW: Calculate and Display Expectation Matrix ---
+            st.subheader("Prediction Expectation Analysis")
+            st.info("This table shows the **difference** between the model's prediction and the 'ideal' rating (generated from the ground-truth P and Q matrices). "
+                    "\n- **Near 0 (Yellow):** The prediction is *expected*. "
+                    "\n- **Positive (Green):** The prediction is *higher than expected*. "
+                    "\n- **Negative (Red):** The prediction is *lower than expected*.")
+
+            try:
+                R_ideal_raw = P_subset @ Q_subset.T
+
+                if R_ideal_raw.size > 0:
+                    scaler = MinMaxScaler(feature_range=(0, 5))
+                    R_ideal_scaled = scaler.fit_transform(R_ideal_raw.to_numpy().reshape(-1, 1)).reshape(R_ideal_raw.shape)
+                    R_ideal_scaled_df = pd.DataFrame(R_ideal_scaled, index=R_ideal_raw.index, columns=R_ideal_raw.columns)
+
+                    # Calculate the difference
+                    Diff_df = R_pred_subset - R_ideal_scaled_df
+
+                    st.write("**Prediction Expectation (Prediction - Ideal Rating)**")
+
+                    # --- START FIX for Request 2 (Truncation) ---
+                    def truncate_name(name, length=15):
+                        if len(str(name)) > length:
+                            return str(name)[:length] + '...'
+                        return str(name)
+
+                    Diff_df_display = Diff_df.copy()
+                    # Truncate the *column* (item) names
+                    Diff_df_display.columns = [truncate_name(col, 15) for col in Diff_df.columns]
+
+                    # Render the truncated dataframe
+                    st.dataframe(Diff_df_display.style.background_gradient(cmap='RdYlGn_r', axis=None, vmin=-3, vmax=3).format("{:.2f}"))
+                    # --- END FIX for Request 2 (Truncation) ---
+
+
+                    # --- NEW: Deep Dive Section ---
+                    st.subheader("Prediction Deep Dive")
+
+                    # --- START FIX for Request 1 (Clarity) ---
+                    st.info("ℹ️ **How to use:** Select a user and item from the dropdowns below to see the ground-truth calculation for that specific cell. (Clicking the heatmap cell directly is not supported).")
+                    # --- END FIX for Request 1 (Clarity) ---
+
+                    deep_col1, deep_col2 = st.columns(2)
+                    with deep_col1:
+                        selected_user_deep = st.selectbox("Select User:", options=display_original_df.index, key="deep_dive_user")
+                    with deep_col2:
+                        selected_item_deep = st.selectbox("Select Item:", options=display_original_df.columns, key="deep_dive_item")
+
+                    if selected_user_deep and selected_item_deep:
+                        p_vec = P_subset.loc[selected_user_deep]
+                        q_vec = Q_subset.loc[selected_item_deep]
+
+                        ideal_raw = R_ideal_raw.loc[selected_user_deep, selected_item_deep]
+                        ideal_scaled = R_ideal_scaled_df.loc[selected_user_deep, selected_item_deep]
+                        prediction = R_pred_subset.loc[selected_user_deep, selected_item_deep]
+                        diff = Diff_df.loc[selected_user_deep, selected_item_deep]
+
+                        calc_col1, calc_col2, calc_col3 = st.columns(3)
+
+                        with calc_col1:
+                            st.write(f"**User Profile (P)**")
+                            st.dataframe(p_vec.to_frame(name="Preference").style.background_gradient(cmap='viridis', vmin=-1, vmax=1).format("{:.2f}"))
+                        with calc_col2:
+                            st.write(f"**Item Profile (Q)**")
+                            st.dataframe(q_vec.to_frame(name="Feature"))
+                        with calc_col3:
+                            st.write("**Calculation**")
+                            st.metric(label="Ground Truth Score (P @ Q.T)", value=f"{ideal_raw:.3f}")
+                            st.metric(label="Ideal Scaled Rating (0-5)", value=f"{ideal_scaled:.3f}")
+                            st.metric(label="Model's Actual Prediction", value=f"{prediction:.3f}")
+                            st.metric(label="Difference (Prediction - Ideal)", value=f"{diff:.3f}")
+
+            except Exception as e:
+                st.error(f"Error during expectation analysis: {e}")
+                import traceback
+                st.exception(traceback.format_exc())
+        # --- END MODIFIED BLOCK ---
+
     with tab3:
         st.subheader("Get Top N Recommendations")
         user_list = results['predicted_df'].index
         selected_user = st.selectbox("Select a User:", options=user_list)
         num_recs = st.number_input("Number of Recommendations (N):", 1, 20, 5)
+
         if selected_user:
             user_profiles_df = results.get('user_profiles')
+
+            # --- MODIFIED BLOCK: Show P matrix profile if it exists ---
             if user_profiles_df is not None:
                 st.subheader(f"Ground Truth Interest Profile for User {selected_user}")
                 try:
-                    user_index = selected_user - 1
-                    user_profile_data = user_profiles_df.iloc[user_index]
+                    # --- FIX: Use .loc[] for string-based index ---
+                    user_profile_data = user_profiles_df.loc[selected_user]
                     profile_df = user_profile_data.to_frame(name='Interest Score').sort_values(by='Interest Score', ascending=False)
-                    st.dataframe(profile_df.style.background_gradient(cmap='viridis', axis=None).format("{:.2f}"), use_container_width=True)
-                except (KeyError, IndexError):
+                    st.dataframe(profile_df.style.background_gradient(cmap='viridis', axis=None, vmin=-1, vmax=1).format("{:.2f}"), use_container_width=True)
+                except (KeyError, IndexError, TypeError):
                     st.warning(f"Could not find a ground truth profile for User {selected_user}.")
+            # --- END MODIFIED BLOCK ---
+
             original_data, user_scores = results['original_df'], results['predicted_df'].loc[selected_user]
             seen_items = original_data.loc[selected_user][original_data.loc[selected_user] > 0].index
             top_n_ids = user_scores.drop(seen_items, errors='ignore').nlargest(num_recs)
+
             top_n_titles = top_n_ids.copy()
             top_n_titles.index = top_n_titles.index.map(lambda mid: get_movie_title(mid, movie_titles_df))
+
+            top_n_df = top_n_titles.to_frame(name="Predicted Score")
+
+            # --- MODIFIED BLOCK: Add characteristics column ---
+            is_generated_dataset = results.get('user_profiles') is not None and results.get('Q_matrix') is not None
+            if is_generated_dataset:
+                q_matrix = results.get('Q_matrix')
+
+                # top_n_ids.index contains the item names/IDs
+                item_names_to_lookup = top_n_ids.index
+
+                # Filter Q_matrix to only the recommended items
+                q_subset = q_matrix.loc[item_names_to_lookup]
+
+                # Function to get features
+                def get_feature_string(item_row):
+                    features = item_row[item_row == 1].index.tolist()
+                    return ", ".join(features)
+
+                # Apply function row-wise
+                top_n_df["Known Item Characteristics"] = q_subset.apply(get_feature_string, axis=1)
+            # --- END MODIFIED BLOCK ---
+
             st.subheader(f"Top {num_recs} Recommendations for User {selected_user}")
-            st.dataframe(top_n_titles.to_frame(name="Predicted Score").style.format("{:.2f}"))
+            st.dataframe(top_n_df.style.format({"Predicted Score": "{:.2f}"}), use_container_width=True)
+
+
+def render_performance_tab(metrics):
+    st.header("Model Performance on Test Set")
+    if metrics['type'] == 'explicit':
+        st.info("These metrics evaluate the accuracy of the predicted ratings against the actual ratings in the test set.")
+        col1, col2, col3 = st.columns(3)
+        col1.metric(label="Root Mean Squared Error (RMSE)", value=f"{metrics.get('rmse', 0):.4f}", help="Measures the average error in predicted ratings. Lower is better.")
+        col2.metric(label="Mean Absolute Error (MAE)", value=f"{metrics.get('mae', 0):.4f}", help="Similar to RMSE, but less sensitive to large errors. Lower is better.")
+        col3.metric(label="R-squared (R²)", value=f"{metrics.get('r2', 0):.4f}", help="Indicates the proportion of variance in the actual ratings that is predictable from the model. Closer to 1 is better.")
+        col4, col5 = st.columns(2)
+        col4.metric(label="Mean Absolute Percentage Error (MAPE)", value=f"{metrics.get('mape', 0):.2f}%", help="Expresses the mean absolute error as a percentage of actual values. Lower is better.")
+        col5.metric(label="Explained Variance Score", value=f"{metrics.get('explained_variance', 0):.4f}", help="Measures how well the model accounts for the variation in the original data. Closer to 1 is better.")
+    elif metrics['type'] == 'implicit':
+        st.info("These metrics evaluate the quality of the item rankings produced by the model.")
+        col1, col2 = st.columns(2)
+        k_val = metrics.get('k', 10)
+        col1.metric(label=f"Precision@{k_val}", value=f"{metrics.get('precision', 0):.2%}")
+        col2.metric(label=f"Recall@{k_val}", value=f"{metrics.get('recall', 0):.2%}")
+        st.info(f"**Precision**: Of the top {k_val} items recommended, what percentage were actually relevant items from the test set?\n\n**Recall**: Of all the relevant items in the test set, what percentage did the model successfully recommend in the top {k_val}?")
+        fig = go.Figure(data=[go.Bar(name='Precision', x=['Performance'], y=[metrics.get('precision', 0)]), go.Bar(name='Recall', x=['Performance'], y=[metrics.get('recall', 0)])])
+        fig.update_layout(title_text=f'Precision and Recall @ {k_val}', yaxis_title="Score", yaxis_tickformat=".0%")
+        st.plotly_chart(fig, use_container_width=True)
+
+
+def render_visualizations_tab(results, selected_run_dir):
+    """
+    Renders the Visualizations tab content.
+    'results' dict provides context (algo_name),
+    'selected_run_dir' specifies which directory to load.
+    """
+    st.header("Training Visualizations")
+    algo_name = results.get('algo_name')
+    # Use the passed-in selected_run_dir
+
+    if not algo_name or not selected_run_dir or not os.path.isdir(selected_run_dir):
+        st.info(f"Visualizations directory not found for this run: {selected_run_dir}")
+        return
+
+    algo_config = ALGORITHM_CONFIG.get(algo_name, {})
+    RendererClass = algo_config.get("visualization_renderer_class")
+    explanations = load_visualization_info(algo_name)
+    st.write(f"Displaying visualizations from: `{selected_run_dir}`")
+
+    # --- Instantiate and Call Renderer ---
+    if RendererClass and issubclass(RendererClass, BaseVisualizationRenderer):
+        try:
+            renderer = RendererClass(selected_run_dir, explanations)
+            renderer.render() # Call the algorithm-specific render method
+        except Exception as e:
+            st.error(f"Error rendering visualizations for {algo_name}: {e}")
+            import traceback
+            st.exception(traceback.format_exc())
+    else:
+        st.info(f"No specific visualization renderer defined or found for {algo_name}.")
+
+def update_state(source_widget_key, target_state_key):
+    """Callback to sync a widget's state with a session_state key."""
+    st.session_state[target_state_key] = st.session_state[source_widget_key]
 
 
 def render_performance_tab(metrics):
