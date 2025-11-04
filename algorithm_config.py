@@ -67,6 +67,7 @@ WIDGET_MAP = {
 
 ALGORITHM_CONFIG = {
     "SVD": {
+        "is_implicit": False,
         "model_class": SVDRecommender, 
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 20}
@@ -76,7 +77,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": SVDVisualizationRenderer
     },
     "ALS": {
-        "model_class": ALSRecommender, 
+        "model_class": ALSRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 30, "default": 10},
@@ -87,7 +89,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": ALSVisualizationRenderer
     },
     "ALS (Improved)": {
-        "model_class": ALSImprovedRecommender, 
+        "model_class": ALSImprovedRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 30, "default": 10},
@@ -99,7 +102,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": ALSImprovedVisualizationRenderer
     },
     "ALS (PySpark)": {
-        "model_class": ALSPySparkRecommender, 
+        "model_class": ALSPySparkRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations (maxIter)", "min": 5, "max": 25, "default": 10},
@@ -109,7 +113,8 @@ ALGORITHM_CONFIG = {
         "visualizer_class": None
     },
     "BPR": {
-        "model_class": BPRRecommender, 
+        "model_class": BPRRecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 100, "max": 5000, "default": 200, "step": 100},
@@ -121,7 +126,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": BPRVisualizationRenderer
     },
     "BPR (Adaptive)": {
-        "model_class": BPRAdaptiveRecommender, 
+        "model_class": BPRAdaptiveRecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 100, "max": 5000, "default": 200, "step": 100},
@@ -134,7 +140,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": BPRAdaptiveVisualizationRenderer
     },
     "ItemKNN": {
-        "model_class": ItemKNNRecommender, 
+        "model_class": ItemKNNRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Number of Neighbors (k)", "min": 5, "max": 100, "default": 20},
             "similarity_metric": {"type": "selectbox", "label": "Similarity Metric", "options": ["cosine", "adjusted_cosine", "pearson"], "default": "cosine"},
@@ -146,7 +153,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": KNNVisualizationRenderer
     },
     "UserKNN": {
-        "model_class": UserKNNRecommender, 
+        "model_class": UserKNNRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Number of Neighbors (k)", "min": 5, "max": 100, "default": 20},
             "similarity_metric": {"type": "selectbox", "label": "Similarity Metric", "options": ["cosine", "adjusted_cosine", "pearson"], "default": "cosine"}
@@ -156,7 +164,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": KNNVisualizationRenderer
     },
     "Slope One": {
-        "model_class": SlopeOneRecommender, 
+        "model_class": SlopeOneRecommender,
+        "is_implicit": False,
         "parameters": {},
         "result_type": "other",
         "visualizer_class": SlopeOneVisualizer,
@@ -164,6 +173,7 @@ ALGORITHM_CONFIG = {
     },
     "NMF": {
         "model_class": NMFRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 100, "default": 50},
@@ -175,7 +185,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": NMFVisualizationRenderer
     },
     "FunkSVD": {
-        "model_class": FunkSVDRecommender, 
+        "model_class": FunkSVDRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 100, "default": 50},
@@ -187,7 +198,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": FunkSVDVisualizationRenderer
     },
     "PureSVD": {
-        "model_class": PureSVDRecommender, 
+        "model_class": PureSVDRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32}
         },
@@ -196,7 +208,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": PureSVDVisualizationRenderer
     },
     "SVD++": {
-        "model_class": SVDppRecommender, 
+        "model_class": SVDppRecommender,
+        "is_implicit": False,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 100},
             "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 30, "default": 26},
@@ -217,7 +230,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": SVDppVisualizationRenderer
     },
     "WRMF": {
-        "model_class": WRMFRecommender, 
+        "model_class": WRMFRecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 30, "default": 10},
@@ -229,7 +243,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": WRMFVisualizationRenderer
     },
     "CML": {
-        "model_class": CMLRecommender, 
+        "model_class": CMLRecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 200, "default": 100, "step": 10},
@@ -242,7 +257,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": CMLVisualizationRenderer
     },
     "NCFNeuMF": {
-        "model_class": NCFRecommender, 
+        "model_class": NCFRecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "model_type": {"type": "selectbox", "label": "Model Type", "options": ['NeuMF', 'GMF', 'NCF'], "default": 'NeuMF'},
@@ -255,7 +271,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": NCFVisualizationRenderer
     },
     "SASRec": {
-        "model_class": SASRecRecommender, 
+        "model_class": SASRecRecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "epochs": {"type": "slider", "label": "Epochs", "min": 5, "max": 100, "default": 30},
@@ -271,7 +288,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": SASRecVisualizationRenderer
     },
     "VAE": {
-        "model_class": VAERecommender, 
+        "model_class": VAERecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "epochs": {"type": "slider", "label": "Epochs", "min": 1, "max": 100, "default": 20},
@@ -283,7 +301,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": VAEVisualizationRenderer
     },
     "SLIM": {
-        "model_class": SLIMRecommender, 
+        "model_class": SLIMRecommender,
+        "is_implicit": True,
         "parameters": {
             "l1_reg": {"type": "slider", "label": "L1 Regularization", "min": 0.0, "max": 0.1, "default": 0.001, "format": "%.4f"},
             "l2_reg": {"type": "slider", "label": "L2 Regularization", "min": 0.0, "max": 0.1, "default": 0.0001, "format": "%.5f"}
@@ -294,7 +313,8 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": SLIMVisualizationRenderer
     },
     "FISM": {
-        "model_class": FISMRecommender, 
+        "model_class": FISMRecommender,
+        "is_implicit": True,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
             "iterations": {"type": "slider", "label": "Iterations", "min": 10, "max": 200, "default": 100, "step": 10},
