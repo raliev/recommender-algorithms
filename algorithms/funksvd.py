@@ -22,7 +22,7 @@ class FunkSVDRecommender(Recommender):
             return 0.0
         return np.sqrt(mean_squared_error(observed_actuals, observed_preds))
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         num_users, num_items = R.shape
         self.R_train = R # Store R
         self.rated_mask = R > 0 # Store the mask
@@ -30,10 +30,6 @@ class FunkSVDRecommender(Recommender):
         self.Q = np.random.normal(scale=1./self.k, size=(num_items, self.k))
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k, 'iterations_set': self.iterations,
-                'learning_rate': self.learning_rate, 'lambda_reg': self.lambda_reg
-            }
             # Pass R to start_run for the breakdown plot
             visualizer.start_run(params_to_save, R=self.R_train)
 

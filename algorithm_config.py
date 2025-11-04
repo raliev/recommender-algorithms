@@ -22,8 +22,8 @@ from algorithms import (
     SLIMRecommender,
     FISMRecommender
 )
-
-# --- VISUALIZER IMPORTS (already present) ---
+from visualization.renderers.NMFVisualizationRenderer import NMFVisualizationRenderer
+from visualization.visualizers.NMFVisualizer import NMFVisualizer
 from visualization.renderers.BPRAdaptiveVisualizationRenderer import BPRAdaptiveVisualizationRenderer
 from visualization.visualizers.BPRAdaptiveVisualizer import BPRAdaptiveVisualizer
 from visualization.renderers.SASRecVisualizationRenderer import SASRecVisualizationRenderer
@@ -163,13 +163,16 @@ ALGORITHM_CONFIG = {
         "visualization_renderer_class": KNNVisualizationRenderer
     },
     "NMF": {
-        "model_class": NMFRecommender, 
+        "model_class": NMFRecommender,
         "parameters": {
             "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
-            "max_iter": {"type": "slider", "label": "Max Iterations", "min": 50, "max": 500, "default": 200}
+            "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 100, "default": 50},
+            "learning_rate": {"type": "slider", "label": "Learning Rate", "min": 0.001, "max": 0.1, "default": 0.005, "step": 0.001, "format": "%.3f"},
+            "lambda_reg": {"type": "slider", "label": "Regularization (lambda)", "min": 0.0, "max": 1.0, "default": 0.02, "step": 0.01}
         },
         "result_type": "matrix_factorization",
-        "visualizer_class": None
+        "visualizer_class": NMFVisualizer,
+        "visualization_renderer_class": NMFVisualizationRenderer
     },
     "FunkSVD": {
         "model_class": FunkSVDRecommender, 
@@ -234,7 +237,7 @@ ALGORITHM_CONFIG = {
             "lambda_reg": {"type": "slider", "label": "Regularization (lambda)", "min": 0.0, "max": 1.0, "default": 0.01, "step": 0.001},
             "margin": {"type": "slider", "label": "Margin", "min": 0.1, "max": 2.0, "default": 0.5, "step": 0.1}
         },
-        "result_type": "matrix_factorization",
+        "result_type": "cml",
         "visualizer_class": CMLVisualizer,
         "visualization_renderer_class": CMLVisualizationRenderer
     },
@@ -286,7 +289,7 @@ ALGORITHM_CONFIG = {
             "l2_reg": {"type": "slider", "label": "L2 Regularization", "min": 0.0, "max": 0.1, "default": 0.0001, "format": "%.5f"}
         },
         "info": "SLIM learns a sparse item-item similarity matrix. L1 encourages sparsity, L2 prevents large weights.",
-        "result_type": "knn_similarity",
+        "result_type": "slim",
         "visualizer_class": SLIMVisualizer,
         "visualization_renderer_class": SLIMVisualizationRenderer
     },
@@ -299,7 +302,7 @@ ALGORITHM_CONFIG = {
             "lambda_reg": {"type": "slider", "label": "Regularization (lambda)", "min": 0.0, "max": 0.1, "default": 0.01, "step": 0.001, "format": "%.3f"},
             "alpha": {"type": "slider", "label": "Alpha", "min": 0.0, "max": 1.0, "default": 0.5, "step": 0.1}
         },
-        "result_type": "knn_similarity",
+        "result_type": "fism",
         "visualizer_class": FISMVisualizer,
         "visualization_renderer_class": FISMVisualizationRenderer
     },

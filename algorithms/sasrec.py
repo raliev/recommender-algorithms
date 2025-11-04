@@ -113,7 +113,7 @@ class SASRecRecommender(Recommender):
         self.num_items = None
         self.user_sequences = {} # Store original sequences for prediction
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         self.num_users, self.num_items = R.shape
 
         # Create sequences dictionary {user_idx: shifted_item_indices}
@@ -146,12 +146,6 @@ class SASRecRecommender(Recommender):
         criterion = nn.CrossEntropyLoss(ignore_index=0) # Ignore padding
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k, 'epochs_set': self.epochs,
-                'learning_rate': self.learning_rate, 'batch_size': self.batch_size,
-                'max_len': self.max_len, 'num_blocks': self.num_blocks,
-                'num_heads': self.num_heads, 'dropout_rate': self.dropout_rate
-            }
             visualizer.k_factors = self.k # Inform visualizer about embedding dim
             visualizer.start_run(params_to_save)
 

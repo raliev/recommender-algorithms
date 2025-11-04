@@ -47,7 +47,7 @@ class FISMRecommender(Recommender):
         )
         return loss + reg_term
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         num_users, num_items = R.shape
         R_binary = (R > 0).astype(int) # Work with binary interactions
 
@@ -62,11 +62,7 @@ class FISMRecommender(Recommender):
             self.user_item_interactions[u] = R_binary[u, :].nonzero()[0] # Use R_binary
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k, 'iterations_set': self.iterations,
-                'learning_rate': self.learning_rate, 'lambda_reg': self.lambda_reg,
-                'alpha': self.alpha
-            }
+    
             visualizer.start_run(params_to_save, R=R_binary) # Pass binary R
 
         for i in range(self.iterations):

@@ -16,17 +16,13 @@ class ALSRecommender(Recommender):
         observed_actuals = R[rated_mask]
         return np.sqrt(mean_squared_error(observed_actuals, observed_preds))
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         num_users, num_items = R.shape
         self.P = np.random.normal(scale=1./self.k, size=(num_users, self.k))
         self.Q = np.random.normal(scale=1./self.k, size=(num_items, self.k))
         rated_mask = R > 0
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k, 'iterations_set': self.iterations,
-                'lambda_reg': self.lambda_reg
-            }
             visualizer.start_run(params_to_save)
 
         for i in range(self.iterations):

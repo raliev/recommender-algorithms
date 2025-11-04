@@ -10,20 +10,13 @@ class CMLRecommender(Recommender):
         self.lambda_reg = lambda_reg #
         self.margin = margin #
 
-    def fit(self, R, progress_callback=None, visualizer = None): #
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None): #
         num_users, num_items = R.shape #
         self.P = np.random.normal(scale=1./self.k, size=(num_users, self.k)) #
         self.Q = np.random.normal(scale=1./self.k, size=(num_items, self.k)) #
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k, 'iterations_set': self.iterations, #
-                'learning_rate': self.learning_rate, 'lambda_reg': self.lambda_reg, #
-                'margin': self.margin #
-            }
-            # --- MODIFICATION: Pass R ---
             visualizer.start_run(params_to_save, R=R) #
-            # --- END MODIFICATION ---
 
         for i in range(self.iterations): #
             P_old = self.P.copy() if visualizer else None #

@@ -13,7 +13,7 @@ class ItemKNNRecommender(Recommender):
         self.min_support = min_support
         self.shrinkage = shrinkage
 
-    def fit(self, R, progress_callback=None, visualizer=None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         self.train_data = R
         num_items = R.shape[1]
         raw_similarity_matrix = np.zeros((num_items, num_items), dtype=float)
@@ -43,17 +43,10 @@ class ItemKNNRecommender(Recommender):
         np.fill_diagonal(self.similarity_matrix, 0)
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name,
-                'k_neighbors': self.k,
-                'similarity_metric': self.similarity_metric,
-                'min_support': self.min_support,
-                'shrinkage': self.shrinkage
-            }
             visualizer.visualize_fit_results(
                 R=R,
-                raw_similarity_matrix=raw_similarity_matrix,
                 final_similarity_matrix=self.similarity_matrix,
+                raw_similarity_matrix=raw_similarity_matrix,
                 co_rated_counts_matrix=co_rated_counts,
                 params=params_to_save
             )

@@ -14,7 +14,7 @@ class ALSImprovedRecommender(Recommender):
         self.item_bias = None
         self.global_mean = None
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         num_users, num_items = R.shape
 
         self.P = np.random.normal(scale=1./self.k, size=(num_users, self.k))
@@ -28,12 +28,6 @@ class ALSImprovedRecommender(Recommender):
         rated_mask = R > 0
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k,
-                'iterations_set': self.iterations,
-                'lambda_reg': self.lambda_factors, # Use lambda_factors
-                'lambda_biases': self.lambda_biases
-            }
             visualizer.start_run(params_to_save)
 
         for i in range(self.iterations):

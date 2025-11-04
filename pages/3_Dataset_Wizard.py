@@ -2,75 +2,75 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
+import json
+import glob
 from sklearn.preprocessing import MinMaxScaler
-
-# --- Static Data ---
-
-# Load latent features from the provided file
-@st.cache_data
-def load_latent_features(file_path="latent_characteristics.csv"):
-    try:
-        df = pd.read_csv(file_path, index_col=0)
-        # Clean up column names that might have spaces
-        df.columns = [col.strip() for col in df.columns]
-        # Get the first 20 features
-        features = df['Feature Dimension'].head(20).tolist()
-        return features
-    except FileNotFoundError:
-        st.error(f"Error: '{file_path}' not found. Please make sure it's in the root directory.")
-        return []
-    except KeyError:
-        st.error(f"Error: 'Feature Dimension' column not in '{file_path}'.")
-        return []
-
-# Predefined item list and their feature mappings (based on user prompt)
-# Using 1-based indexing from the prompt for features
-PREDEFINED_ITEMS = {
-    "Herman Miller Eames Lounge Chair": [1, 2, 10, 20],
-    "iPhone 17 Pro": [1, 6, 10, 17],
-    "Antique Victorian Armchair": [2, 10, 16],
-    "Patagonia Better Sweater (Fleece Jacket)": [5, 8, 17],
-    "Casio F-91W Digital Watch": [7, 11, 16],
-    "Nintendo Switch (console)": [6, 9, 17, 19],
-    "Sony WH-1000XM5 Noise-Cancelling Headphones": [1, 6, 9, 20],
-    "A ‘Fast & Furious’ Movie Ticket": [3, 12, 17],
-    "A ‘Cards Against Humanity’ Game": [3, 14, 17, 19],
-    "A ‘Dark Souls’ Video Game": [15, 18, 20],
-    "A 5000-piece ‘Boring Landscape’ Jigsaw Puzzle": [4, 13, 20],
-    "A ‘Le Creuset’ Cast Iron Dutch Oven": [2, 8, 10],
-    "IKEA ‘Billy’ Bookshelf": [1, 7, 11, 17],
-    "A ‘GoPro’ Action Camera": [6, 8, 9, 12],
-    "A ‘Dungeons & Dragons’ Player’s Handbook": [2, 13, 18, 19],
-    "A ‘Moleskine’ Classic Notebook": [1, 7, 20],
-    "Vintage ‘Ray-Ban’ Wayfarer Sunglasses": [2, 16, 17],
-    "A Brightly-colored ‘Pop Art’ Poster": [1, 3, 16],
-    "A 12-Month ‘Amazon Prime’ Subscription": [7, 11, 17],
-    "A Hand-carved Wooden Chess Set": [2, 5, 13, 19]
-}
-
-# Predefined user names pool
 PREDEFINED_USERS = [f"User_{i+1:03d}" for i in range(500)] # Pool of 500 users
-
-# --- Helper Functions ---
+BASE_GT_PATH = "datasets/ground_truth"
 
 @st.cache_data
-def get_full_item_feature_matrix(item_map, feature_list):
+def load_ground_truth_datasets():
+    """Scans the ground_truth directory for available dataset subfolders."""
+    if not os.path.isdir(BASE_GT_PATH):
+        return []
+    try:
+        dataset_names = [d for d in os.listdir(BASE_GT_PATH) if os.path.isdir(os.path.join(BASE_GT_PATH, d))]
+        return sorted(dataset_names)
+    except Exception as e:
+        st.error(f"Error scanning for ground truth datasets: {e}")
+        return []
+
+@st.cache_data
+def load_ground_truth_data(dataset_name):
+    """Loads the features, items, and map for a selected ground truth dataset."""
+    dataset_path = os.path.join(BASE_GT_PATH, dataset_name)
+
+    try:
+        # Load features
+        features_path = os.path.join(dataset_path, "latent_characteristics.csv")
+        features_df = pd.read_csv(features_path)
+        all_features = features_df['Feature Dimension'].str.strip().tolist()
+
+        # Load items
+        items_path = os.path.join(dataset_path, "items.csv")
+        items_df = pd.read_csv(items_path)
+        all_items = items_df['Item Name'].str.strip().tolist()
+
+        # Load map
+        map_path = os.path.join(dataset_path, "item_feature_map.json")
+        with open(map_path, 'r') as f:
+            item_feature_map = json.load(f)
+
+        return all_features, all_items, item_feature_map
+
+    except FileNotFoundError as e:
+        st.error(f"Error: Missing file in '{dataset_path}'. Could not find: {e.filename}")
+        return [], [], {}
+    except Exception as e:
+        st.error(f"Error loading ground truth data for '{dataset_name}': {e}")
+        return [], [], {}
+
+
+def get_full_item_feature_matrix(item_map, all_items, all_features):
     """
-    Creates the full 20x20 item-feature matrix (Q_full) based on predefined data.
+    Creates the full item-feature matrix (Q_full) based on loaded data.
     Values are 1 if the feature is present, 0 otherwise.
     """
-    item_names = list(item_map.keys())
-    num_items_total = len(item_names)
-    num_features_total = len(feature_list)
+    num_items_total = len(all_items)
+    num_features_total = len(all_features)
 
-    # Create a 20x20 matrix
-    Q_full = pd.DataFrame(0, index=item_names, columns=feature_list, dtype=int)
+    # Create the full Q matrix
+    Q_full = pd.DataFrame(0, index=all_items, columns=all_features, dtype=int)
 
     for item_name, feature_indices in item_map.items():
+        # Ensure item is in our "all_items" list (in case map is stale)
+        if item_name not in all_items:
+            continue
+
         for feature_index in feature_indices:
             # Convert 1-based index from prompt to 0-based index for list
             if 0 <= feature_index - 1 < num_features_total:
-                feature_name = feature_list[feature_index - 1]
+                feature_name = all_features[feature_index - 1]
                 Q_full.loc[item_name, feature_name] = 1
     return Q_full
 
@@ -83,35 +83,68 @@ def initialize_session_state():
         st.session_state.R_ideal = pd.DataFrame()
     if 'R_final' not in st.session_state:
         st.session_state.R_final = pd.DataFrame()
+    if 'selected_ground_truth' not in st.session_state:
+        st.session_state.selected_ground_truth = "recipes_and_tastes"
 
 # --- Page UI ---
 
 st.set_page_config(page_title="Dataset Wizard", layout="wide")
 st.title("🧙‍♂️ Dataset Generation Wizard")
 
-# Load static data
-ALL_FEATURES = load_latent_features()
-if not ALL_FEATURES:
-    st.stop()
-ALL_ITEMS = list(PREDEFINED_ITEMS.keys())
-Q_full = get_full_item_feature_matrix(PREDEFINED_ITEMS, ALL_FEATURES)
-
 # Initialize state
 initialize_session_state()
 
-# --- Step 1: Configuration ---
-st.header("Step 1: Configure Dataset Dimensions")
+# --- Step 1: Select Ground Truth Dataset ---
+st.header("Step 1: Select Ground Truth Dataset")
+st.info("Choose the set of items and latent features to build your dataset from.")
+
+ground_truth_options = load_ground_truth_datasets()
+if not ground_truth_options:
+    st.error(f"No ground truth datasets found in '{BASE_GT_PATH}'. Please create at least one.")
+    st.stop()
+
+# Set default if current selection is invalid
+if st.session_state.selected_ground_truth not in ground_truth_options:
+    st.session_state.selected_ground_truth = ground_truth_options[0]
+
+selected_gt_name = st.selectbox(
+    "Available Ground Truth Datasets:",
+    options=ground_truth_options,
+    index=ground_truth_options.index(st.session_state.selected_ground_truth),
+    key="wiz_gt_select"
+)
+
+# Update session state on change
+if selected_gt_name != st.session_state.selected_ground_truth:
+    st.session_state.selected_ground_truth = selected_gt_name
+    # Clear all matrices if the ground truth changes
+    st.session_state.P_matrix = pd.DataFrame()
+    st.session_state.Q_matrix = pd.DataFrame()
+    st.session_state.R_ideal = pd.DataFrame()
+    st.session_state.R_final = pd.DataFrame()
+    st.rerun()
+
+# Load the selected ground truth data
+ALL_FEATURES, ALL_ITEMS, ITEM_FEATURE_MAP = load_ground_truth_data(selected_gt_name)
+if not ALL_FEATURES or not ALL_ITEMS:
+    st.error(f"Failed to load data for '{selected_gt_name}'. Check file integrity.")
+    st.stop()
+
+Q_full = get_full_item_feature_matrix(ITEM_FEATURE_MAP, ALL_ITEMS, ALL_FEATURES)
+
+# --- Step 2: Configure Dataset Dimensions ---
+st.header("Step 2: Configure Dataset Dimensions")
 
 cols_config = st.columns(3)
 with cols_config[0]:
-    num_users = st.number_input("Number of Users", min_value=1, max_value=len(PREDEFINED_USERS), value=50, step=10, key="wiz_num_users")
+    num_users = st.number_input("Number of Users", min_value=1, max_value=len(PREDEFINED_USERS), value=min(50, len(PREDEFINED_USERS)), step=10, key="wiz_num_users")
 with cols_config[1]:
-    num_items = st.number_input("Number of Items", min_value=1, max_value=len(ALL_ITEMS), value=20, step=1, key="wiz_num_items")
+    num_items = st.number_input("Number of Items", min_value=1, max_value=len(ALL_ITEMS), value=min(20, len(ALL_ITEMS)), step=1, key="wiz_num_items")
 with cols_config[2]:
-    num_features = st.number_input("Number of Latent Features", min_value=1, max_value=len(ALL_FEATURES), value=10, step=1, key="wiz_num_features")
+    num_features = st.number_input("Number of Latent Features", min_value=1, max_value=len(ALL_FEATURES), value=min(10, len(ALL_FEATURES)), step=1, key="wiz_num_features")
 
-# --- Step 2: Define Preferences & Features ---
-st.header("Step 2: Define User Preferences and Item Features")
+# --- Step 3: Define Preferences & Features ---
+st.header("Step 3: Define User Preferences and Item Features")
 
 # Get the slices of data based on user inputs
 user_names = PREDEFINED_USERS[:num_users]
@@ -134,7 +167,8 @@ if current_p_df.shape != (num_users, num_features) or list(current_p_df.index) !
     # Copy over matching cells
     common_rows = new_P.index.intersection(current_p_df.index)
     common_cols = new_P.columns.intersection(current_p_df.columns)
-    new_P.loc[common_rows, common_cols] = current_p_df.loc[common_rows, common_cols]
+    if not common_rows.empty and not common_cols.empty:
+        new_P.loc[common_rows, common_cols] = current_p_df.loc[common_rows, common_cols]
     st.session_state.P_matrix = new_P.fillna(0)
 
 
@@ -157,7 +191,8 @@ with tab_p:
     edited_p = st.data_editor(
         st.session_state.P_matrix,
         use_container_width=True,
-        key="p_matrix_editor"
+        key="p_matrix_editor",
+        num_rows="dynamic" # Allow adding/removing users if needed, though PREDEFINED_USERS is the cap
     )
 
     # Check if the matrix was changed by the editor
@@ -169,11 +204,11 @@ with tab_p:
 
 with tab_q:
     st.subheader("Item-Feature Matrix (Q)")
-    st.markdown("This matrix is **fixed** based on the predefined item data. (1 = has feature, 0 = does not).")
+    st.markdown("This matrix is **fixed** based on the selected ground truth data. (1 = has feature, 0 = does not).")
     st.dataframe(st.session_state.Q_matrix, use_container_width=True)
 
-# --- Step 3: Generate Ratings ---
-st.header("Step 3: Generate, Adjust, and Save Dataset")
+# --- Step 4: Generate Ratings ---
+st.header("Step 4: Generate, Adjust, and Save Dataset")
 
 if st.button("Generate Ideal Ratings", type="primary", use_container_width=True):
     P = st.session_state.P_matrix.to_numpy()
@@ -224,8 +259,8 @@ if not st.session_state.R_ideal.empty:
     st.subheader("Final Generated Ratings Matrix (R_final)")
     st.dataframe(st.session_state.R_final.style.format("{:.2f}").background_gradient(cmap='viridis', axis=None, vmin=0, vmax=5), use_container_width=True)
 
-    # --- Step 4: Save Dataset ---
-    st.subheader("Save Dataset")
+    # --- Step 5: Save Dataset ---
+    st.subheader("Step 5: Save Dataset")
 
     dataset_name = st.text_input("Dataset Name (e.g., 'My_Test_Data')", key="wiz_dataset_name")
 

@@ -57,7 +57,7 @@ class SVDppRecommender(Recommender):
         return np.sqrt(mean_squared_error(observed_actuals, observed_preds))
 
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         num_users, num_items = R.shape
         self.R_train = R # Store R
         self.rated_mask = R > 0 # Store mask
@@ -80,17 +80,6 @@ class SVDppRecommender(Recommender):
                 self._user_norm_factors[u] = 1.0 / np.sqrt(item_count)
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name,
-                'k': self.k,
-                'iterations_set': self.iterations,
-                'learning_rate': self.learning_rate,
-                'lambda_p': self.lambda_p,
-                'lambda_q': self.lambda_q,
-                'lambda_y': self.lambda_y,
-                'lambda_bu': self.lambda_bu,
-                'lambda_bi': self.lambda_bi
-            }
             visualizer.start_run(params_to_save)
 
         for i in range(self.iterations):

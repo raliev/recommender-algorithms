@@ -73,7 +73,7 @@ class NCFRecommender(Recommender):
         self.num_users = None #
         self.num_items = None #
 
-    def fit(self, R, progress_callback=None, visualizer = None): #
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None): #
         self.num_users, self.num_items = R.shape #
 
         # Prepare training data with negative sampling
@@ -105,17 +105,9 @@ class NCFRecommender(Recommender):
         criterion = nn.BCELoss() #
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, # This will now be "NCFNeuMF" #
-                'model_type': self.model_type_internal, #
-                'k': self.k, 'epochs_set': self.epochs, #
-                'learning_rate': self.learning_rate, 'batch_size': self.batch_size #
-            }
             # k_factors param for visualizer init
             visualizer.k_factors = self.k #
-            # --- MODIFICATION: Pass R to start_run ---
             visualizer.start_run(params_to_save, R=R) #
-            # --- END MODIFICATION ---
 
         self.model.train() #
         for epoch in range(self.epochs): #

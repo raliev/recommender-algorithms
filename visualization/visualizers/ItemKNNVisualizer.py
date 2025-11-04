@@ -69,7 +69,7 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
         )
         self.visuals_manifest.append(manifest_entry)
 
-    def visualize_fit_results(self, R, final_similarity_matrix,
+    def visualize_fit_results(self, R, final_similarity_matrix=None,
                               raw_similarity_matrix=None,
                               co_rated_counts_matrix=None, params=None):
         """

@@ -10,7 +10,7 @@ class Recommender:
         self.R_predicted = None
         self.name = "BaseRecommender"
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         """
         Trains the model on the ratings matrix R.
         """

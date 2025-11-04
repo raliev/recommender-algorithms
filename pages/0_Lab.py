@@ -125,6 +125,7 @@ if run_button:
             st.error(f"Algorithm {algorithm} not found."); st.stop()
 
         visualizer = None
+        params_to_save = None
         if show_internals:
             VisClass = ALGORITHM_CONFIG[algorithm].get("visualizer_class")
             if VisClass:
@@ -136,12 +137,19 @@ if run_button:
                 if 'k' in vis_sig.parameters:
                     vis_args['k'] = model_params.get('k', 10)
                 visualizer = VisClass(**vis_args)
+                params_to_save = {
+                    **model_params,
+                    'algorithm': algorithm,
+                    'data_source': data_source,
+                    'data_params': data_params
+                }
 
         try:
             model.train_data = data_to_train
             model.fit(data_to_train,
                       progress_callback=lambda p: progress_bar.progress(p, text=f"Training {algorithm} model... {int(p*100)}%"),
-                      visualizer=visualizer)
+                      visualizer=visualizer,
+                      params_to_save=params_to_save)
         except ImportError as e:
             st.error(f"Could not run {algorithm}. Please make sure required libraries are installed: {e}")
             st.stop()

@@ -22,7 +22,7 @@ class SLIMRecommender(Recommender):
         self.l2_reg = l2_reg
         self.similarity_matrix = None
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         self.train_data = R
         num_items = R.shape[1]
         self.similarity_matrix = np.zeros((num_items, num_items))

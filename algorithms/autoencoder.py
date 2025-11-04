@@ -59,7 +59,7 @@ class VAERecommender(Recommender):
         kld = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         return recon_loss + beta * kld
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         _, self.num_items = R.shape
 
         # Binarize the input for implicit feedback
@@ -72,11 +72,6 @@ class VAERecommender(Recommender):
         optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name,
-                'k': self.k, 'epochs_set': self.epochs,
-                'learning_rate': self.learning_rate, 'batch_size': self.batch_size
-            }
             visualizer.k_factors = self.k # Set k_factors for the visualizer
             visualizer.start_run(params_to_save)
 

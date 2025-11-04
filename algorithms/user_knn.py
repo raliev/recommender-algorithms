@@ -13,7 +13,7 @@ class UserKNNRecommender(Recommender):
         self.train_data = None
         self.user_means = None
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         self.train_data = R
 
         num_items = R.shape[1]

@@ -19,16 +19,12 @@ class WRMFRecommender(Recommender):
         reg_term = self.lambda_reg * (np.sum(np.linalg.norm(P, axis=1)**2) + np.sum(np.linalg.norm(Q, axis=1)**2))
         return weighted_error_interactions + reg_term
 
-    def fit(self, R, progress_callback=None, visualizer=None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         num_users, num_items = R.shape
         self.P = np.random.normal(scale=1./self.k, size=(num_users, self.k))
         self.Q = np.random.normal(scale=1./self.k, size=(num_items, self.k))
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k, 'iterations_set': self.iterations,
-                'lambda_reg': self.lambda_reg, 'alpha': self.alpha
-            }
             visualizer.start_run(params_to_save, R=R)
 
         C = 1 + self.alpha * R

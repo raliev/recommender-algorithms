@@ -11,7 +11,7 @@ class SlopeOneRecommender(Recommender):
         self.freq_matrix = None
         self.train_data = None
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         self.train_data = R
         num_items = R.shape[1]
         self.dev_matrix = np.zeros((num_items, num_items), dtype=float)
@@ -33,7 +33,6 @@ class SlopeOneRecommender(Recommender):
             0
             ) 
 
-        # **** NEW VISUALIZATION BLOCK ****
         if visualizer:
             params_to_save = {
                 'algorithm': self.name,
@@ -43,7 +42,6 @@ class SlopeOneRecommender(Recommender):
                 freq_matrix=self.freq_matrix,
                 params=params_to_save
             )
-        # **** END NEW BLOCK ****
 
         if progress_callback:
             progress_callback(1.0)

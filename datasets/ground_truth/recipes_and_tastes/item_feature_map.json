@@ -1,0 +1,22 @@
+{
+  "Spaghetti Carbonara": [4, 6, 9, 12],
+  "Chicken Tikka Masala": [1, 3, 4, 6, 12, 20],
+  "Caesar Salad": [5, 9, 16, 20],
+  "Beef Bourguignon": [4, 8, 9, 12, 19],
+  "Apple Pie": [2, 6, 9, 17, 19],
+  "Chocolate Lava Cake": [2, 4, 15, 17],
+  "Guacamole": [5, 7, 11, 16, 18, 20],
+  "Sushi (Maki Roll)": [5, 10, 13, 16],
+  "Pad Thai": [1, 2, 3, 7, 10, 18],
+  "Margherita Pizza": [3, 6, 7, 9, 11, 14, 20],
+  "Classic Cheeseburger": [3, 4, 6, 7, 12, 14, 18],
+  "French Onion Soup": [3, 4, 6, 9, 19],
+  "Chili con Carne": [1, 3, 4, 6, 12, 14, 19],
+  "Tacos al Pastor": [1, 3, 12, 14, 18, 20],
+  "Ratatouille": [5, 9, 11, 16, 19, 20],
+  "Lemon Herb Roasted Chicken": [3, 6, 9, 12, 14, 16, 19, 20],
+  "Victoria Sponge Cake": [2, 5, 9, 17],
+  "Beef Wellington": [4, 8, 9, 12, 15, 17],
+  "Miso Soup": [3, 5, 7, 9, 11, 16],
+  "Falafel Wrap": [5, 7, 11, 16, 18, 20]
+}

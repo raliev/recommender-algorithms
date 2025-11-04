@@ -16,7 +16,7 @@ class BPRAdaptiveRecommender(Recommender):
         self.lambda_reg = lambda_reg
         self.negative_sample_pool_size = negative_sample_pool_size
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         R_binary = (R > 0).astype(int)
         num_users, num_items = R_binary.shape
         self.P = np.random.normal(scale=0.1, size=(num_users, self.k))
@@ -24,13 +24,6 @@ class BPRAdaptiveRecommender(Recommender):
         positive_pairs = np.argwhere(R_binary > 0)
 
         if visualizer:
-            params_to_save = {
-                'algorithm': self.name, 'k': self.k,
-                'iterations_set': self.iterations,
-                'learning_rate': self.learning_rate,
-                'lambda_reg': self.lambda_reg,
-                'negative_sample_pool_size': self.negative_sample_pool_size
-            }
             visualizer.start_run(params_to_save, R=R_binary)
 
         for i in range(self.iterations):

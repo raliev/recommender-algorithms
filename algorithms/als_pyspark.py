@@ -39,7 +39,7 @@ class ALSPySparkRecommender(Recommender):
         if hasattr(self, 'spark'):
             self.spark.stop()
 
-    def fit(self, R, progress_callback=None, visualizer = None):
+    def fit(self, R, progress_callback=None, visualizer=None, params_to_save=None):
         self.original_shape = R.shape
 
         # 1. Convert NumPy matrix to Spark DataFrame format
