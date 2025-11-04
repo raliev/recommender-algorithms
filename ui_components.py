@@ -22,7 +22,6 @@ def update_selected_run_dir(key_name, options_dict):
         st.session_state.results = None
         st.session_state.metrics = None
 
-
 def render_sidebar():
     link_url = "https://testmysearch.com/books/recommender-algorithms.html"
     image_url = "https://testmysearch.com/img/ra-ws.jpg"
@@ -266,7 +265,6 @@ def get_movie_title(movie_id, movie_titles_df):
             return movie_id
         return f"Movie ID: {movie_id} (Error)"
 
-
 @st.cache_data
 def load_visualization_info(algo_name):
     info_path = os.path.join('visualizations_info', f'{algo_name.lower().replace(" / ", "_").replace(" ", "_")}.md')
@@ -297,7 +295,6 @@ def load_visualization_info(algo_name):
     for md_key, old_key in key_map.items():
         if md_key in explanations: explanations[old_key] = explanations[md_key]
     return explanations
-
 
 def render_results_tabs(results):
     st.header("Results")
@@ -585,7 +582,6 @@ def render_results_tabs(results):
             st.subheader(f"Top {num_recs} Recommendations for User {selected_user}")
             st.dataframe(top_n_df.style.format({"Predicted Score": "{:.2f}"}), use_container_width=True)
 
-
 def render_performance_tab(metrics):
     st.header("Model Performance on Test Set")
     if metrics['type'] == 'explicit':
@@ -607,66 +603,6 @@ def render_performance_tab(metrics):
         fig = go.Figure(data=[go.Bar(name='Precision', x=['Performance'], y=[metrics.get('precision', 0)]), go.Bar(name='Recall', x=['Performance'], y=[metrics.get('recall', 0)])])
         fig.update_layout(title_text=f'Precision and Recall @ {k_val}', yaxis_title="Score", yaxis_tickformat=".0%")
         st.plotly_chart(fig, use_container_width=True)
-
-
-def render_visualizations_tab(results, selected_run_dir):
-    """
-    Renders the Visualizations tab content.
-    'results' dict provides context (algo_name),
-    'selected_run_dir' specifies which directory to load.
-    """
-    st.header("Training Visualizations")
-    algo_name = results.get('algo_name')
-    # Use the passed-in selected_run_dir
-
-    if not algo_name or not selected_run_dir or not os.path.isdir(selected_run_dir):
-        st.info(f"Visualizations directory not found for this run: {selected_run_dir}")
-        return
-
-    algo_config = ALGORITHM_CONFIG.get(algo_name, {})
-    RendererClass = algo_config.get("visualization_renderer_class")
-    explanations = load_visualization_info(algo_name)
-    st.write(f"Displaying visualizations from: `{selected_run_dir}`")
-
-    # --- Instantiate and Call Renderer ---
-    if RendererClass and issubclass(RendererClass, BaseVisualizationRenderer):
-        try:
-            renderer = RendererClass(selected_run_dir, explanations)
-            renderer.render() # Call the algorithm-specific render method
-        except Exception as e:
-            st.error(f"Error rendering visualizations for {algo_name}: {e}")
-            import traceback
-            st.exception(traceback.format_exc())
-    else:
-        st.info(f"No specific visualization renderer defined or found for {algo_name}.")
-
-def update_state(source_widget_key, target_state_key):
-    """Callback to sync a widget's state with a session_state key."""
-    st.session_state[target_state_key] = st.session_state[source_widget_key]
-
-
-def render_performance_tab(metrics):
-    st.header("Model Performance on Test Set")
-    if metrics['type'] == 'explicit':
-        st.info("These metrics evaluate the accuracy of the predicted ratings against the actual ratings in the test set.")
-        col1, col2, col3 = st.columns(3)
-        col1.metric(label="Root Mean Squared Error (RMSE)", value=f"{metrics.get('rmse', 0):.4f}", help="Measures the average error in predicted ratings. Lower is better.")
-        col2.metric(label="Mean Absolute Error (MAE)", value=f"{metrics.get('mae', 0):.4f}", help="Similar to RMSE, but less sensitive to large errors. Lower is better.")
-        col3.metric(label="R-squared (R²)", value=f"{metrics.get('r2', 0):.4f}", help="Indicates the proportion of variance in the actual ratings that is predictable from the model. Closer to 1 is better.")
-        col4, col5 = st.columns(2)
-        col4.metric(label="Mean Absolute Percentage Error (MAPE)", value=f"{metrics.get('mape', 0):.2f}%", help="Expresses the mean absolute error as a percentage of actual values. Lower is better.")
-        col5.metric(label="Explained Variance Score", value=f"{metrics.get('explained_variance', 0):.4f}", help="Measures how well the model accounts for the variation in the original data. Closer to 1 is better.")
-    elif metrics['type'] == 'implicit':
-        st.info("These metrics evaluate the quality of the item rankings produced by the model.")
-        col1, col2 = st.columns(2)
-        k_val = metrics.get('k', 10)
-        col1.metric(label=f"Precision@{k_val}", value=f"{metrics.get('precision', 0):.2%}")
-        col2.metric(label=f"Recall@{k_val}", value=f"{metrics.get('recall', 0):.2%}")
-        st.info(f"**Precision**: Of the top {k_val} items recommended, what percentage were actually relevant items from the test set?\n\n**Recall**: Of all the relevant items in the test set, what percentage did the model successfully recommend in the top {k_val}?")
-        fig = go.Figure(data=[go.Bar(name='Precision', x=['Performance'], y=[metrics.get('precision', 0)]), go.Bar(name='Recall', x=['Performance'], y=[metrics.get('recall', 0)])])
-        fig.update_layout(title_text=f'Precision and Recall @ {k_val}', yaxis_title="Score", yaxis_tickformat=".0%")
-        st.plotly_chart(fig, use_container_width=True)
-
 
 def render_visualizations_tab(results, selected_run_dir):
     """
