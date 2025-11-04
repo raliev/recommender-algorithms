@@ -178,14 +178,89 @@ with tab_p:
     st.subheader("User-Preference Matrix (P)")
     st.markdown("Define how much each user likes each latent feature. Values from -1 (dislikes) to 1 (loves).")
 
+    st.markdown("##### 🤖 Auto-fill Controls")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        contrast_level = st.slider(
+            "Preference Contrast",
+            min_value=0.0,
+            max_value=1.0,
+            value=1.0,
+            step=0.05,
+            key="wiz_p_contrast",
+            help="Controls the strength of preferences. 0.0 = all preferences are neutral (0.0), 1.0 = maximum contrast (-1.0 or 1.0)."
+        )
+    with c2:
+        # Ensure max_value is at least 1
+        max_peaks = max(1, num_features)
+        num_peaks = st.slider(
+            "Target # of Max Preferences",
+            min_value=0,
+            max_value=max_peaks,
+            value=max(1, max_peaks // 4),
+            step=1,
+            key="wiz_p_peaks",
+            help="The target number of 'loved' (max value) features for each user."
+        )
+    with c3:
+        # Ensure max_value is at least 0
+        max_variability = max(0, int(num_features / 2))
+        peak_variability = st.slider(
+            "Preference Variability (Chaos)",
+            min_value=0,
+            max_value=max_variability,
+            value=0,
+            step=1,
+            key="wiz_p_variability",
+            help="How much the number of max preferences can vary per user. 0 = no variation (all users get 'Target #' peaks)."
+        )
+
     if st.button("Auto-fill User Preferences (Randomly)", key="fill_p"):
+
+        contrast = st.session_state.wiz_p_contrast
+        target_peaks = st.session_state.wiz_p_peaks
+        variability = st.session_state.wiz_p_variability
+
+        # Create the new P matrix as a numpy array first
+        P_matrix_np = np.zeros((num_users, num_features))
+
+        low_val = -1.0 * contrast  # The "dislike" value, scaled by contrast
+        high_val = 1.0 * contrast # The "love" value, scaled by contrast
+
+        for u in range(num_users):
+            # 1. Determine the actual number of peaks for this user
+            actual_num_peaks = target_peaks
+            if variability > 0:
+                # Add or subtract a random amount based on variability
+                chaos = np.random.randint(-variability, variability + 1)
+                actual_num_peaks += chaos
+
+            # Ensure the number of peaks is within valid bounds (0 to num_features)
+            actual_num_peaks = np.clip(actual_num_peaks, 0, num_features)
+
+            # 2. Create the user's preference vector
+            # Start with all preferences at the "dislike" value
+            user_vector = np.full(num_features, low_val)
+
+            if actual_num_peaks > 0:
+                # 3. Randomly select indices to set as "loved"
+                peak_indices = np.random.choice(num_features, actual_num_peaks, replace=False)
+                user_vector[peak_indices] = high_val
+
+            # 4. Add a tiny amount of noise for realism
+            noise = np.random.normal(0, 0.05, num_features)
+            user_vector = np.clip(user_vector + noise, -1.0, 1.0)
+
+            # 5. Assign to the matrix
+            P_matrix_np[u, :] = user_vector
+
         # Fill with random values between -1 and 1
         st.session_state.P_matrix = pd.DataFrame(
-            np.random.uniform(-1, 1, size=(num_users, num_features)),
+            P_matrix_np,
             index=user_names,
             columns=feature_names
         )
-        st.toast("User preferences randomized!")
+        st.toast("User preferences generated with new settings!")
 
     # Display editable data editor for P
     edited_p = st.data_editor(
@@ -210,6 +285,24 @@ with tab_q:
 # --- Step 4: Generate Ratings ---
 st.header("Step 4: Generate, Adjust, and Save Dataset")
 
+st.subheader("Generation Settings")
+cols_gen = st.columns(2)
+with cols_gen[0]:
+    dataset_type = st.radio(
+        "Select the type of data to generate:",
+        ["Explicit (1-5 Ratings)", "Implicit (0/1 Interactions)"],
+        key="wiz_dataset_type",
+        help="**Explicit:** Generates ratings from 0-5. '0' means 'missing'. \n\n**Implicit:** Generates interactions (0 or 1). '0' means 'no interaction'."
+    )
+with cols_gen[1]:
+    interaction_threshold = st.slider(
+        "Implicit Interaction Threshold",
+        min_value=0.0, max_value=1.0, value=0.75, step=0.05,
+        key="wiz_interaction_threshold",
+        help="If 'Implicit' is chosen, scores above this probability (after scaling P@Q.T to 0-1) will become a '1' (interacted).",
+        disabled=(dataset_type != "Implicit (0/1 Interactions)")
+    )
+
 if st.button("Generate Ideal Ratings", type="primary", use_container_width=True):
     P = st.session_state.P_matrix.to_numpy()
     Q = st.session_state.Q_matrix.to_numpy()
@@ -219,15 +312,26 @@ if st.button("Generate Ideal Ratings", type="primary", use_container_width=True)
 
     # Scale to 0-5
     if R_raw.size > 0:
-        scaler = MinMaxScaler(feature_range=(0, 5))
-        # We need to scale the *entire* matrix, not column-wise
-        R_scaled = scaler.fit_transform(R_raw.reshape(-1, 1)).reshape(R_raw.shape)
-
-        st.session_state.R_ideal = pd.DataFrame(
-            R_scaled,
-            index=st.session_state.P_matrix.index,
-            columns=st.session_state.Q_matrix.index
-        )
+        if dataset_type == "Explicit (1-5 Ratings)":
+            # This is the existing logic
+            scaler = MinMaxScaler(feature_range=(0, 5)) 
+            R_scaled = scaler.fit_transform(R_raw.reshape(-1, 1)).reshape(R_raw.shape) 
+            st.session_state.R_ideal = pd.DataFrame(
+                R_scaled,
+                index=st.session_state.P_matrix.index,
+                columns=st.session_state.Q_matrix.index
+            )
+        else: # "Implicit (0/1 Interactions)"
+            # This is the new logic
+            scaler = MinMaxScaler(feature_range=(0, 1))
+            R_prob = scaler.fit_transform(R_raw.reshape(-1, 1)).reshape(R_raw.shape)
+            # Apply threshold
+            R_binary = (R_prob >= interaction_threshold).astype(int)
+            st.session_state.R_ideal = pd.DataFrame(
+                R_binary,
+                index=st.session_state.P_matrix.index,
+                columns=st.session_state.Q_matrix.index
+            )
         st.session_state.R_final = st.session_state.R_ideal.copy() # Initialize R_final
         st.toast("Ideal ratings generated!")
     else:
@@ -235,30 +339,67 @@ if st.button("Generate Ideal Ratings", type="primary", use_container_width=True)
 
 if not st.session_state.R_ideal.empty:
     st.subheader("Adjust Final Ratings")
+    dataset_type = st.session_state.get("wiz_dataset_type", "Explicit (1-5 Ratings)")
+    if dataset_type == "Explicit (1-5 Ratings)":
+        # --- This is the existing adjustment logic ---
+        cols_adjust = st.columns(2)
+        with cols_adjust[0]:
+            noise_level = st.slider("Rating Noise (Std. Deviation)", min_value=0.0, max_value=2.0, value=0.5, step=0.1, key="wiz_noise")
+            st.markdown("Adds random Gaussian noise to the ideal ratings.")
+        with cols_adjust[1]:
+            sparsity_pct = st.slider("Sparsity (Remove % of Ratings)", min_value=0, max_value=100, value=70, step=5, key="wiz_sparsity")
+            st.markdown("Randomly sets a percentage of all ratings to 0 (missing).")
 
-    cols_adjust = st.columns(2)
-    with cols_adjust[0]:
-        noise_level = st.slider("Rating Noise (Std. Deviation)", min_value=0.0, max_value=2.0, value=0.5, step=0.1, key="wiz_noise")
-        st.markdown("Adds random Gaussian noise to the ideal ratings to make them less perfect.")
+        # Apply adjustments
+        R_noisy = st.session_state.R_ideal + np.random.normal(0, noise_level, st.session_state.R_ideal.shape)
+        R_clipped = R_noisy.clip(0, 5)
 
-    with cols_adjust[1]:
-        sparsity_pct = st.slider("Sparsity (Remove % of Ratings)", min_value=0, max_value=100, value=70, step=5, key="wiz_sparsity")
-        st.markdown("Randomly removes a percentage of ratings to create a sparse matrix (sets them to 0).")
+        sparsity_mask = np.random.rand(*R_clipped.shape) < (sparsity_pct / 100.0)
+        R_final = R_clipped.mask(sparsity_mask, 0) # Set masked values to 0
 
-    # Apply adjustments
-    R_noisy = st.session_state.R_ideal + np.random.normal(0, noise_level, st.session_state.R_ideal.shape)
-    R_clipped = R_noisy.clip(0, 5)
+    else: # "Implicit (0/1 Interactions)"
+        # --- This is the new adjustment logic for implicit ---
+        cols_adjust = st.columns(2)
+        with cols_adjust[0]:
+            noise_level = st.slider(
+                "Interaction Noise (% to flip)", 0, 100, 10,
+                key="wiz_noise_implicit",
+                help="Percentage of all interactions (both 0s and 1s) to randomly flip."
+            )
+        with cols_adjust[1]:
+            sparsity_pct = st.slider(
+                "Sparsity (Remove % of *Positive* Ratings)", 0, 100, 70,
+                key="wiz_sparsity_implicit",
+                help="Randomly removes this percentage of '1's, setting them to '0'."
+            )
 
-    # Apply sparsity
-    # Create a mask where True means "remove"
-    sparsity_mask = np.random.rand(*R_clipped.shape) < (sparsity_pct / 100.0)
-    R_final = R_clipped.mask(sparsity_mask, 0) # Set masked values to 0
+        R_ideal_np = st.session_state.R_ideal.to_numpy()
 
+        # 1. Apply noise (flipping bits)
+        noise_mask = np.random.rand(*R_ideal_np.shape) < (noise_level / 100.0)
+        R_noisy = np.where(noise_mask, 1 - R_ideal_np, R_ideal_np) # Flip bits
+
+        # 2. Apply sparsity (removing 1s)
+        positive_indices = np.where(R_noisy == 1)
+        num_positives_to_remove = int(len(positive_indices[0]) * (sparsity_pct / 100.0))
+
+        R_final_np = R_noisy.copy()
+        if num_positives_to_remove > 0:
+            indices_to_remove = np.random.choice(len(positive_indices[0]), num_positives_to_remove, replace=False)
+
+            sparse_mask_rows = positive_indices[0][indices_to_remove]
+            sparse_mask_cols = positive_indices[1][indices_to_remove]
+
+            R_final_np[sparse_mask_rows, sparse_mask_cols] = 0 # Set to 0
+
+        R_final = pd.DataFrame(R_final_np, index=st.session_state.R_ideal.index, columns=st.session_state.R_ideal.columns)
     st.session_state.R_final = R_final
 
     st.subheader("Final Generated Ratings Matrix (R_final)")
-    st.dataframe(st.session_state.R_final.style.format("{:.2f}").background_gradient(cmap='viridis', axis=None, vmin=0, vmax=5), use_container_width=True)
-
+    if dataset_type == "Implicit (0/1 Interactions)":
+        st.dataframe(st.session_state.R_final.style.format("{:.0f}"), use_container_width=True)
+    else:
+        st.dataframe(st.session_state.R_final.style.format("{:.2f}").background_gradient(cmap='viridis', axis=None, vmin=0, vmax=5), use_container_width=True)
     # --- Step 5: Save Dataset ---
     st.subheader("Step 5: Save Dataset")
 

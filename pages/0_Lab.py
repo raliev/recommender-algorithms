@@ -61,7 +61,7 @@ if run_button:
                 user_counts = df_filtered_movies[df_filtered_movies > 0].count(axis=1)
                 top_users_ids = user_counts.nlargest(num_users).index
                 data_to_use = df_filtered_movies.loc[top_users_ids]
-                st.write(f"Using a subset of the data: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
+                st.write(f"Using a subset of the data: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} items**.")
                 train_df, test_df = split_data(data_to_use)
                 data_to_train = train_df.to_numpy()
 
@@ -102,17 +102,9 @@ if run_button:
     if data_to_use is not None:
         progress_bar = st.progress(0, text=f"Training {algorithm} model...")
 
-        model_map = {
-            "SVD": SVDRecommender, "ALS": ALSRecommender, "ALS (Improved)": ALSImprovedRecommender,
-            "BPR": BPRRecommender, "ItemKNN": ItemKNNRecommender, "Slope One": SlopeOneRecommender,
-            "NMF": NMFRecommender, "ALS (PySpark)": ALSPySparkRecommender,
-            "FunkSVD": FunkSVDRecommender, "PureSVD": PureSVDRecommender, "SVD++": SVDppRecommender,
-            "WRMF": WRMFRecommender, "CML": CMLRecommender, "UserKNN": UserKNNRecommender,
-            "NCFNeuMF": NCFRecommender, "SASRec": SASRecRecommender, "SLIM": SLIMRecommender,
-            "VAE": VAERecommender, "FISM": FISMRecommender,
-            "BPR (Adaptive)": BPRAdaptiveRecommender # Ensure this is in the map
-        }
-        model_class = model_map.get(algorithm)
+        algo_config_all = ALGORITHM_CONFIG.get(algorithm, {})
+        model_class = algo_config_all["model_class"]
+
         if model_class:
             import inspect
             sig = inspect.signature(model_class.__init__)
@@ -179,10 +171,10 @@ if run_button:
         }
 
         if test_df is not None:
-            algo_result_type = ALGORITHM_CONFIG[algorithm].get("result_type", "other")
-            implicit_types = ["bpr", "wrmf", "cml", "neural", "vae", "slim", "fism"]
+            algo_config_all = ALGORITHM_CONFIG.get(algorithm, {})
+            is_implicit_model = algo_config_all.get("is_implicit", False)
 
-            if any(t in algo_result_type.lower() for t in implicit_types):
+            if is_implicit_model:
                 k_prec_rec = 10
                 # Pass train_df to the metric function
                 precision, recall = precision_recall_at_k(predicted_df, test_df, train_df, k=k_prec_rec)

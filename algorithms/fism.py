@@ -62,7 +62,7 @@ class FISMRecommender(Recommender):
             self.user_item_interactions[u] = R_binary[u, :].nonzero()[0] # Use R_binary
 
         if visualizer:
-    
+
             visualizer.start_run(params_to_save, R=R_binary) # Pass binary R
 
         for i in range(self.iterations):

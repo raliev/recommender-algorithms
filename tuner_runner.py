@@ -109,9 +109,9 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
                 predicted_matrix = model.predict()
                 predicted_df = pd.DataFrame(predicted_matrix, index=data_to_use.index, columns=data_to_use.columns)
 
-                # --- MODIFIED: Corrected logic for implicit models ---
-                implicit_models = ["BPR", "WRMF", "CML", "NCFNeuMF", "SASRec", "VAE", "SLIM", "FISM", "BPR (Adaptive)"]
-                if algo_name in implicit_models:
+                algo_config_all = ALGORITHM_CONFIG.get(algo_name, {})
+                is_implicit_model = algo_config_all.get("is_implicit", False)
+                if is_implicit_model:
                     metrics = {'type': 'implicit', **precision_recall_at_k(predicted_df, test_df, train_df)} # Pass train_df
                     primary_metric = 'precision'
                     value_to_optimize = -metrics[primary_metric] # Optuna minimizes, so negate precision
@@ -141,10 +141,10 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
                 st.error(f"Error running {algo_name} with params {model_params}: {e}")
                 return float('inf') # Error case
 
-        # Create and Run Optuna Study
-        # --- MODIFIED: Corrected logic for minimization/maximization ---
-        implicit_models = ["BPR", "WRMF", "CML", "NCFNeuMF", "SASRec", "VAE", "SLIM", "FISM", "BPR (Adaptive)"]
-        is_minimizing = not (algo_name in implicit_models) # Precision needs maximization
+        algo_config_all = ALGORITHM_CONFIG.get(algo_name, {})
+        is_implicit_model = algo_config_all.get("is_implicit", False)
+
+        is_minimizing = not is_implicit_model # Precision needs maximization
 
         study = optuna.create_study(direction="minimize" if is_minimizing else "maximize")
         study.optimize(objective, n_trials=n_trials, callbacks=[lambda study, trial: algo_progress_bar.progress( (trial.number + 1) / n_trials )] )

@@ -70,7 +70,7 @@ def render_sidebar():
         st.sidebar.info("A fast subset of the most active users and popular movies.")
         st.sidebar.subheader("1. Select Data Size") #
         data_params['num_users'] = st.sidebar.slider("Number of Users to Use", 50, 610, 100)
-        data_params['num_movies'] = st.sidebar.slider("Number of Movies to Use", 100, 2000, 500)
+        data_params['num_movies'] = st.sidebar.slider("Number of Items to Use", 100, 2000, 500)
     elif data_source == "Synthetic 20x20":
         st.sidebar.info("Using your generated 20x20 synthetic dataset.")
     elif data_source == "MovieLens (Full Dataset)":
@@ -420,9 +420,13 @@ def render_results_tabs(results):
 
             st.dataframe(display_predicted_df.style.format("{:.2f}").apply(style_predictions, axis=1))
 
-        # --- MODIFIED BLOCK: Show P, Q, and new Expectation Matrix ---
         is_generated_dataset = results.get('user_profiles') is not None and results.get('Q_matrix') is not None
-        if is_generated_dataset:
+
+        algo_name = results['algo_name']
+        algo_config_all = ALGORITHM_CONFIG.get(algo_name, {})
+        is_implicit_model = algo_config_all.get("is_implicit", False)
+
+        if is_generated_dataset and not is_implicit_model:
             st.divider()
             st.subheader("Ground Truth Analysis (for reference only)")
             st.info("The following matrices were used to **generate** this dataset. They were **not** passed to the recommender.")
@@ -523,8 +527,11 @@ def render_results_tabs(results):
                 st.error(f"Error during expectation analysis: {e}")
                 import traceback
                 st.exception(traceback.format_exc())
-        # --- END MODIFIED BLOCK ---
-
+        elif is_generated_dataset and is_implicit_model:
+            st.divider()
+            st.subheader("Ground Truth Analysis (Not Applicable)")
+            st.info(f"The **Prediction Expectation Analysis** is not shown because **{algo_name}** is an implicit feedback (ranking) model. "
+                    "It predicts ranking scores, not explicit 0-5 ratings, so it cannot be directly compared to the 'Ideal Rating' ground truth.")
     with tab3:
         st.subheader("Get Top N Recommendations")
         user_list = results['predicted_df'].index
