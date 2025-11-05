@@ -20,6 +20,12 @@ A comprehensive Streamlit application for experimenting with state-of-the-art re
 * **Performance Metrics**: Track RMSE, MAE, Precision@k, Recall@k, and other standard evaluation metrics.
 * **Report & Run Viewing**: Review and compare results from past hyperparameter tuning runs and individual lab experiments.
 
+You can automatically generate a synthetic dataset that adheres to specific logic based on underlying item properties. For example, if you select the 'recipes_and_tastes' ground-truth template, the system utilizes a predefined set of recipes, each associated with one or more of 20 latent tastes. The wizard then generates users with randomized taste preferences (a ground-truth P matrix) and, based on the item-taste associations (a ground-truth Q matrix), calculates ideal user-recipe ratings. 
+
+This generation process is highly configurable, allowing you to control parameters ranging from the number of tastes an average user possesses and the contrast of their preferences to the level of random noise and sparsity applied to the final output dataset. 
+
+This generated dataset can then be used to train and test the algorithms. The recommender model will only receive the final ratings or interactions as input; the underlying characteristics (the 'tastes') are withheld. However, these ground-truth preferences and features are used within the 'Lab' page to provide a deeper analysis of the recommendation quality, supplementing the standard train/test metrics by showing why a recommendation was or was not correct based on the user's known interests.
+
 ## Getting Started
 
 ### Prerequisites
@@ -137,24 +143,20 @@ The book provides:
 ### Purchase Options
 
 Available on:
-* [Amazon US](https://amazon.com/dp/xxx)
-* [Amazon UK](https://amazon.co.uk/dp/xxx)
-* [Other Amazon markets](https://testmysearch.com/books/recommender-algorithms.html)
-* [Barnes & Noble](https://barnesandnoble.com/xxx)
+-  [Amazon US](https://www.amazon.com/dp/B0FVGLS1ZK)
+-  [Amazon UK](https://www.amazon.co.uk/dp/B0FVGK1H36)
+-  [Amazon Germany](https://www.amazon.de/dp/B0FVGK1H36)
+-  [Amazon Italy](https://www.amazon.it/dp/B0FVGK1H36)
+-  [Amazon Spain](https://www.amazon.es/dp/B0FVGK1H36)
+-  [Amazon Poland](https://www.amazon.pl/dp/B0FVGK1H36)
+-  [Amazon Canada](https://www.amazon.ca/dp/B0FVGK1H36)
+-  [Amazon Australia](https://www.amazon.au/dp/B0FVGK1H36)
+-  [Amazon India](https://www.amazon.in/Recommender-Algorithms-Rauf-Aliev/dp/B0FVTDRGSW)
 
-## Project Structure
+Read sample: [https://testmysearch.com/pdfs/books/recommenders-sample.pdf](https://testmysearch.com/pdfs/books/recommenders-sample.pdf)
 
-```
-app/
-├── algorithms/          # Implementation of recommender algorithms
-├── visualization/       # Visualization components and renderers
-├── pages/               # Streamlit pages (Lab, Hyperparameter Tuning)
-├── datasets/            # Sample datasets
-├── visualizations_info/ # Algorithm visualization documentation
-├── app.py               # Main Streamlit app
-├── requirements.txt     # Python dependencies
-└── README.md            # This file
-```
+-  [Pay with Paypal and get a PDF for $9.99](https://testmysearch.com/books/recommender-algorithms.html)
+
 
 ## Configuration
 
