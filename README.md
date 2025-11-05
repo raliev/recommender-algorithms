@@ -8,7 +8,8 @@
 [![Book](https://img.shields.io/badge/Book-Recommender%20Algorithms%20in%202026-orange.svg)](https://testmysearch.com/books/recommender-algorithms.html)
 
 A comprehensive Streamlit application for experimenting with state-of-the-art recommendation algorithms. This interactive laboratory provides real-time training, visualization, and analysis of various recommender system algorithms, making it an ideal companion to the book.
-(https://testmysearch.com/img/ra-ws.jpg)
+
+![Book Cover](https://testmysearch.com/img/ra-ws.jpg)
 
 ## Key Features
 
