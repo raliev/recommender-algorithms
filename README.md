@@ -191,3 +191,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For questions or support related to the book or this application:
 * Book Website: [testmysearch.com/books](https://testmysearch.com/books/recommender-algorithms.html)
 * Author: Rauf Aliev
+
+## Screenshots
+
+![screenshots/scr1.png](screenshots/scr1.png)
+![screenshots/scr2.png](screenshots/scr2.png)
+![screenshots/scr3.png](screenshots/scr3.png)
+![screenshots/scr4.png](screenshots/scr4.png)
+![screenshots/scr5.png](screenshots/scr5.png)
+![screenshots/scr6.png](screenshots/scr6.png)
+![screenshots/scr7.png](screenshots/scr7.png)
+![screenshots/scr8.png](screenshots/scr8.png)
+![screenshots/scr9.png](screenshots/scr9.png)
+![screenshots/scrA.png](screenshots/scrA.png)
