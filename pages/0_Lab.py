@@ -32,11 +32,10 @@ if 'user_profiles' not in st.session_state: st.session_state['user_profiles'] = 
 # --- NEW: State for selected run ---
 if 'selected_visuals_run_dir' not in st.session_state:
     st.session_state.selected_visuals_run_dir = None
-if 'Q_matrix' not in st.session_state: st.session_state['Q_matrix'] = None # --- ADDED ---
+if 'Q_matrix' not in st.session_state: st.session_state['Q_matrix'] = None
 
 data_source, data, algorithm, model_params, data_params, run_button, show_internals = render_sidebar()
 
-# --- NEW: Render the run explorer *before* the run button logic ---
 # This will display the selectbox and update st.session_state.selected_visuals_run_dir
 render_previous_runs_explorer(algorithm, 'visuals')
 
@@ -51,7 +50,7 @@ if run_button:
             full_df, movie_titles_df = download_and_load_movielens()
             st.session_state['movie_titles'] = movie_titles_df
             st.session_state['user_profiles'] = None
-            st.session_state['Q_matrix'] = None # --- ADDED ---
+            st.session_state['Q_matrix'] = None
             if full_df is not None:
                 num_users = data_params.get('num_users', 100)
                 num_movies = data_params.get('num_movies', 500)
@@ -69,7 +68,7 @@ if run_button:
             full_df, movie_titles_df = download_and_load_movielens()
             st.session_state['movie_titles'] = movie_titles_df
             st.session_state['user_profiles'] = None
-            st.session_state['Q_matrix'] = None # --- ADDED ---
+            st.session_state['Q_matrix'] = None
             if full_df is not None:
                 data_to_use = full_df
                 st.warning("️️[!] You are using the full dataset. Calculations may be very slow...")
@@ -77,7 +76,6 @@ if run_button:
                 train_df, test_df = split_data(data_to_use)
                 data_to_train = train_df.to_numpy()
         elif data_source in generated_dataset_names:
-            # --- MODIFIED: Now receives 4 variables ---
             full_df, movie_titles_df, user_profiles_df, q_matrix_df = load_generated_data(data_source)
             if full_df is not None:
                 st.session_state['movie_titles'] = movie_titles_df
@@ -93,7 +91,7 @@ if run_button:
             if full_df is not None:
                 st.session_state['movie_titles'] = movie_titles_df
                 st.session_state['user_profiles'] = user_profiles_df
-                st.session_state['Q_matrix'] = None # --- ADDED: No Q for synthetic 20x20 ---
+                st.session_state['Q_matrix'] = None
                 data_to_use = full_df
                 st.write(f"Using the synthetic dataset: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
                 train_df, test_df = split_data(data_to_use)
@@ -109,12 +107,15 @@ if run_button:
             import inspect
             sig = inspect.signature(model_class.__init__)
             algo_specific_params = {k: v for k, v in model_params.items() if k in sig.parameters}
-            if 'k' in sig.parameters and 'k' in ALGORITHM_CONFIG[algorithm].get("parameters", {}):
-                algo_specific_params['k'] = model_params.get('k')
-
+            if 'movie_titles_df' in sig.parameters:
+                algo_specific_params['movie_titles_df'] = st.session_state.get('movie_titles')
+            if 'item_id_map' in sig.parameters:
+                # data_to_use.columns contains the MovieIDs in the correct order for the numpy matrix
+                algo_specific_params['item_id_map'] = data_to_use.columns.tolist()
             model = model_class(**algo_specific_params)
         else:
-            st.error(f"Algorithm {algorithm} not found."); st.stop()
+            st.error(f"Algorithm {algorithm} not found.");
+            st.stop()
 
         visualizer = None
         params_to_save = None
@@ -124,10 +125,20 @@ if run_button:
                 import inspect
                 vis_sig = inspect.signature(VisClass.__init__)
                 vis_args = {}
+
+                # --- START FIX ---
+                # Check for all known dynamic constructor arguments
                 if 'k_factors' in vis_sig.parameters:
                     vis_args['k_factors'] = model_params.get('k', 0)
                 if 'k' in vis_sig.parameters:
                     vis_args['k'] = model_params.get('k', 10)
+                if 'algorithm_name' in vis_sig.parameters:
+                    vis_args['algorithm_name'] = algorithm
+                # --- END FIX ---
+                if 'movie_titles_df' in vis_sig.parameters:
+                    vis_args['movie_titles_df'] = st.session_state.get('movie_titles')
+                if 'item_id_map' in vis_sig.parameters:
+                    vis_args['item_id_map'] = data_to_use.columns.tolist()
                 visualizer = VisClass(**vis_args)
                 params_to_save = {
                     **model_params,
@@ -252,7 +263,7 @@ elif st.session_state.get('selected_visuals_run_dir'):
     else:
         st.info("No performance metrics (metrics.json) were saved for this run.")
 
-    # Manually build minimal info for render_visualizations_tab
+        # Manually build minimal info for render_visualizations_tab
     results_for_viz = {
         'algo_name': algorithm,
         'visuals_base_dir': 'visuals'

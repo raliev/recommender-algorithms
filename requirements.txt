@@ -10,3 +10,4 @@ scipy==1.16.2
 seaborn==0.13.2
 streamlit==1.38.0
 torch==2.4.1
+mlxtend==0.23.4

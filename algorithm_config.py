@@ -22,6 +22,11 @@ from algorithms import (
     SLIMRecommender,
     FISMRecommender
 )
+from algorithms import AprioriRecommender, EclatRecommender, TopPopularRecommender, FPGrowthRecommender
+from visualization.renderers.AssociationRuleVisualizationRenderer import AssociationRuleVisualizationRenderer
+from visualization.renderers.TopPopularVisualizationRenderer import TopPopularVisualizationRenderer
+from visualization.visualizers.AssociationRuleVisualizer import AssociationRuleVisualizer
+from visualization.visualizers.TopPopularVisualizer import TopPopularVisualizer
 from visualization.renderers.NMFVisualizationRenderer import NMFVisualizationRenderer
 from visualization.visualizers.NMFVisualizer import NMFVisualizer
 from visualization.renderers.BPRAdaptiveVisualizationRenderer import BPRAdaptiveVisualizationRenderer
@@ -66,6 +71,51 @@ WIDGET_MAP = {
 }
 
 ALGORITHM_CONFIG = {
+    "Top Popular": {
+        "is_implicit": True,
+        "model_class": TopPopularRecommender,
+        "parameters": {},
+        "info": "Recommends items based on their overall popularity. A non-personalized baseline. ",
+        "result_type": "other",
+        "visualizer_class": TopPopularVisualizer,
+        "visualization_renderer_class": TopPopularVisualizationRenderer
+    },
+    "Apriori": {
+        "is_implicit": True,
+        "model_class": AprioriRecommender,
+        "parameters": {
+            "min_support": {"type": "slider", "label": "Min Support", "min": 0.02, "max": 1.0, "default": 0.3, "step": 0.01, "format": "%.2f"},
+            "min_confidence": {"type": "slider", "label": "Min Confidence", "min": 0.0, "max": 1.0, "default": 0.2, "step": 0.01}
+        },
+        "info": "Finds frequent itemsets using the Apriori algorithm  and generates 'if-then' rules. This is a 'from scratch' implementation for educational purposes.",
+        "result_type": "association_rules",
+        "visualizer_class": AssociationRuleVisualizer,
+        "visualization_renderer_class": AssociationRuleVisualizationRenderer
+    },
+    "FP-Growth": {
+        "is_implicit": True,
+        "model_class": FPGrowthRecommender,
+        "parameters": {
+            "min_support": {"type": "slider", "label": "Min Support", "min": 0.01, "max": 1.0, "default": 0.2, "step": 0.01, "format": "%.2f"},
+            "min_confidence": {"type": "slider", "label": "Min Confidence", "min": 0.0, "max": 1.0, "default": 0.2, "step": 0.01}
+        },
+        "info": "Finds frequent itemsets using a tree-based FP-tree structure . This implementation uses the `mlxtend` library.",
+        "result_type": "association_rules",
+        "visualizer_class": AssociationRuleVisualizer,
+        "visualization_renderer_class": AssociationRuleVisualizationRenderer
+    },
+    "Eclat": {
+        "is_implicit": True,
+        "model_class": EclatRecommender,
+        "parameters": {
+            "min_support": {"type": "slider", "label": "Min Support", "min": 0.01, "max": 1.0, "default": 0.2, "step": 0.01, "format": "%.2f"},
+            "min_confidence": {"type": "slider", "label": "Min Confidence", "min": 0.0, "max": 1.0, "default": 0.2, "step": 0.01}
+        },
+        "info": "Finds frequent itemsets using a vertical data layout and set intersections . This is a 'from scratch' implementation for educational purposes.",
+        "result_type": "association_rules",
+        "visualizer_class": AssociationRuleVisualizer,
+        "visualization_renderer_class": AssociationRuleVisualizationRenderer
+    },
     "SVD": {
         "is_implicit": False,
         "model_class": SVDRecommender, 

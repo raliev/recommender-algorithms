@@ -1,4 +1,3 @@
-# visualization/visualizers/BPRVisualizer.py
 import os
 import json
 import numpy as np
@@ -9,6 +8,7 @@ from .AlgorithmVisualizer import AlgorithmVisualizer
 from visualization.components.ConvergencePlotter import ConvergencePlotter
 from visualization.components.FactorMatrixPlotter import FactorMatrixPlotter
 from visualization.components.RecommendationBreakdownPlotter import RecommendationBreakdownPlotter
+from visualization.components.EmbeddingTSNEPlotter import EmbeddingTSNEPlotter # 1. IMPORT NEW PLOTTER
 
 class BPRVisualizer(AlgorithmVisualizer):
     """Specific visualizer for BPR."""
@@ -17,11 +17,13 @@ class BPRVisualizer(AlgorithmVisualizer):
         self.k_factors = k_factors
         self.history['p_change'] = []
         self.history['q_change'] = []
+        self.history['auc'] = [] # 2. ADD AUC TO HISTORY
 
         self.convergence_plotter = ConvergencePlotter(self.visuals_dir)
         self.matrix_plotter = FactorMatrixPlotter(self.visuals_dir,
                                                   self.k_factors)
         self.breakdown_plotter = RecommendationBreakdownPlotter(self.visuals_dir)
+        self.tsne_plotter = EmbeddingTSNEPlotter(self.visuals_dir) # 3. INSTANTIATE TSNE PLOTTER
 
         self.R = None
         self.P = None
@@ -38,32 +40,66 @@ class BPRVisualizer(AlgorithmVisualizer):
         self.history['p_change'].append(p_change)
         self.history['q_change'].append(q_change)
 
+        # 4. RECORD AUC IF PASSED
+        if 'auc' in kwargs:
+            self.history['auc'].append(kwargs['auc'])
+
         self.P = P
         self.Q = Q
 
         if self._should_plot_snapshot(iteration_num, total_iterations):
-            manifest_entry = self.matrix_plotter.plot_snapshot(
+            # Plot factor snapshots
+            manifest_entry_factors = self.matrix_plotter.plot_snapshot(
                 P=P,
                 Q=Q,
                 iter_num=iteration_num,
                 interpretation_key="Snapshots"
             )
-            self.visuals_manifest.append(manifest_entry)
+            self.visuals_manifest.append(manifest_entry_factors)
+
+            # 5. PLOT TSNE
+            manifest_entry_tsne = self.tsne_plotter.plot(
+                Q=Q,
+                P=P,
+                iter_num=iteration_num,
+                title=f'Embedding t-SNE (Iter {iteration_num})',
+                filename=f'tsne_iter_{iteration_num}.png',
+                interpretation_key='TSNE'
+            )
+            if manifest_entry_tsne:
+                self.visuals_manifest.append(manifest_entry_tsne)
+
 
     def _plot_convergence_graphs(self):
-        # ... (this method is unchanged) 
-        p_changes_to_plot = self.history['p_change'][1:] # ...
-        q_changes_to_plot = self.history['q_change'][1:] # ...
+        # 6. MODIFIED: Plot both factor change and AUC
+
+        # --- Plot 1: Factor Change ---
+        p_changes_to_plot = self.history['p_change'][1:] if len(self.history['p_change']) > 1 else self.history['p_change']
+        q_changes_to_plot = self.history['q_change'][1:] if len(self.history['q_change']) > 1 else self.history['q_change']
+
         if p_changes_to_plot or q_changes_to_plot:
-            manifest_entry = self.convergence_plotter.plot(
+            manifest_entry_factors = self.convergence_plotter.plot(
                 data_dict={'P Change Norm': p_changes_to_plot,
                            'Q Change Norm': q_changes_to_plot},
-                title='Change in Latent Factors (Frobenius Norm) over Iterations',
+                title='Change in Latent Factors (Frobenius Norm)',
                 y_label='Norm of Difference',
                 filename='factor_change_convergence.png',
                 interpretation_key='Factor Change'
             )
-            self.visuals_manifest.append(manifest_entry)
+            self.visuals_manifest.append(manifest_entry_factors)
+
+        # --- Plot 2: AUC ---
+        if 'auc' in self.history and self.history['auc']:
+            auc_to_plot = self.history['auc']
+            manifest_entry_auc = self.convergence_plotter.plot(
+                data_dict={'Validation AUC': auc_to_plot},
+                title='Validation AUC over Iterations',
+                y_label='AUC',
+                filename='auc_convergence.png',
+                interpretation_key='AUC' # New key for renderer
+            )
+            self.visuals_manifest.append(manifest_entry_auc)
+
 
     def _plot_recommendation_breakdown(self):
         """
@@ -114,7 +150,7 @@ class BPRVisualizer(AlgorithmVisualizer):
         self.params_saved['iterations_run'] = self.iterations_run
         self._save_params() # Update with final iteration count
 
-        self._plot_convergence_graphs() # Plot factor changes
+        self._plot_convergence_graphs() # Plot factor changes AND AUC
 
         self._plot_recommendation_breakdown()
 

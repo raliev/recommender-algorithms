@@ -1,4 +1,3 @@
-# visualization/visualizers/BPRAdaptiveVisualizer.py
 import os
 import json
 import numpy as np
@@ -7,6 +6,7 @@ from datetime import datetime
 
 from .BPRVisualizer import BPRVisualizer # Inherit from BPRVisualizer
 from visualization.components.ConvergencePlotter import ConvergencePlotter
+from visualization.components.EmbeddingTSNEPlotter import EmbeddingTSNEPlotter # 1. IMPORT NEW PLOTTER
 
 class BPRAdaptiveVisualizer(BPRVisualizer):
     """Specific visualizer for BPR (Adaptive)."""
@@ -21,9 +21,11 @@ class BPRAdaptiveVisualizer(BPRVisualizer):
         self.convergence_plotter = ConvergencePlotter(self.visuals_dir)
         self.matrix_plotter = self.matrix_plotter # Can reuse parent's
         self.breakdown_plotter = self.breakdown_plotter # Can reuse parent's
+        self.tsne_plotter = EmbeddingTSNEPlotter(self.visuals_dir) # 2. INSTANTIATE TSNE PLOTTER
 
         # Add new history key
         self.history['avg_negative_score'] = []
+        self.history['auc'] = [] # 3. ADD AUC TO HISTORY
 
     def record_iteration(self, iteration_num, total_iterations, P, Q,
                          p_change, q_change, **kwargs):
@@ -33,6 +35,10 @@ class BPRAdaptiveVisualizer(BPRVisualizer):
 
         self.history['p_change'].append(p_change)
         self.history['q_change'].append(q_change)
+
+        # 4. RECORD AUC IF PASSED
+        if 'auc' in kwargs:
+            self.history['auc'].append(kwargs['auc'])
 
         # NEW: Record the average negative score
         if 'avg_negative_score' in kwargs:
@@ -50,8 +56,21 @@ class BPRAdaptiveVisualizer(BPRVisualizer):
             )
             self.visuals_manifest.append(manifest_entry)
 
+            # 5. PLOT TSNE
+            manifest_entry_tsne = self.tsne_plotter.plot(
+                Q=Q,
+                P=P,
+                iter_num=iteration_num,
+                title=f'Embedding t-SNE (Iter {iteration_num})',
+                filename=f'tsne_iter_{iteration_num}.png',
+                interpretation_key='TSNE'
+            )
+            if manifest_entry_tsne:
+                self.visuals_manifest.append(manifest_entry_tsne)
+
+
     def _plot_convergence_graphs(self):
-        """Plots convergence for factor change and average negative score."""
+        """Plots convergence for factor change, negative score, and AUC."""
 
         # --- Plot 1: Factor Change (same as original BPR) ---
         p_changes_to_plot = self.history['p_change'][1:] if len(self.history['p_change']) > 1 else self.history['p_change']
@@ -79,6 +98,18 @@ class BPRAdaptiveVisualizer(BPRVisualizer):
                 interpretation_key='Avg. Negative Score' # New key for renderer
             )
             self.visuals_manifest.append(manifest_entry_neg_score)
+
+        # --- Plot 3: AUC (Copied from BPRVisualizer) ---
+        if 'auc' in self.history and self.history['auc']:
+            auc_to_plot = self.history['auc']
+            manifest_entry_auc = self.convergence_plotter.plot(
+                data_dict={'Validation AUC': auc_to_plot},
+                title='Validation AUC over Iterations',
+                y_label='AUC',
+                filename='auc_convergence.png',
+                interpretation_key='AUC' # New key for renderer
+            )
+            self.visuals_manifest.append(manifest_entry_auc)
 
     # end_run, _plot_recommendation_breakdown are inherited from BPRVisualizer
     # which inherits them from AlgorithmVisualizer / WRMFVisualizer (via BPRVisualizer's parentage)

@@ -84,7 +84,6 @@ def split_data(df):
 
 
 def calculate_regression_metrics(predicted_df, test_df):
-    # ... (this function remains unchanged)
     test_indices = test_df.to_numpy().nonzero()
     preds = predicted_df.to_numpy()[test_indices]
     actuals = test_df.to_numpy()[test_indices]
@@ -100,9 +99,6 @@ def calculate_regression_metrics(predicted_df, test_df):
         'explained_variance': explained_variance_score(actuals, preds)
     }
 
-
-
-# 1. Добавьте train_df в сигнатуру функции
 def precision_recall_at_k(predicted_scores_df, test_df, train_df, k=10):
     precisions = []
     recalls = []

@@ -1,5 +1,8 @@
 # algorithms/__init__.py
+from .apriori import AprioriRecommender
 from .bpr_adaptive import BPRAdaptiveRecommender
+from .eclat import EclatRecommender
+from .fpgrowth import FPGrowthRecommender
 from .svd import SVDRecommender
 from .als import ALSRecommender
 from .bpr import BPRRecommender
@@ -11,6 +14,7 @@ from .als_pyspark import ALSPySparkRecommender
 from .funksvd import FunkSVDRecommender
 from .puresvd import PureSVDRecommender
 from .svdpp import SVDppRecommender
+from .toppopular import TopPopularRecommender
 from .wrmf import WRMFRecommender
 from .cml import CMLRecommender
 from .user_knn import UserKNNRecommender
@@ -41,5 +45,9 @@ __all__ = [
     'SASRecRecommender',
     'SLIMRecommender',
     'VAERecommender',
-    'FISMRecommender'
+    'FISMRecommender',
+    'TopPopularRecommender',
+    'AprioriRecommender',
+    'FPGrowthRecommender',
+    'EclatRecommender'
 ]

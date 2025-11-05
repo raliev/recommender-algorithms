@@ -12,6 +12,14 @@ def _render_image_with_interpretation(file_path, caption, explanation_text, colu
     else:
         container.caption(f"{caption} (File not found: {os.path.basename(file_path)})")
 
+def render_tsne_plot(run_dir, manifest_entry, explanations, column=None):
+    """Renders a single tsne_plot visualization."""
+    file_path = os.path.join(run_dir, manifest_entry["file"])
+    caption = manifest_entry["name"]
+    interp_key = manifest_entry["interpretation_key"]
+    interp_text = explanations.get(interp_key, f"Explanation for '{interp_key}' not found.")
+    _render_image_with_interpretation(file_path, caption, interp_text, column)
+
 def render_line_plot(run_dir, manifest_entry, explanations, column=None):
     """Renders a single line_plot visualization."""
     file_path = os.path.join(run_dir, manifest_entry["file"])
