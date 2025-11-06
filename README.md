@@ -13,7 +13,7 @@ A comprehensive Streamlit application for experimenting with state-of-the-art re
 
 ## Key Features
 
-* **Interactive Algorithm Lab**: Train and compare over 20 recommendation algorithms in real-time.
+* **Interactive Algorithm Lab**: Train and compare over 25 recommendation algorithms in real-time.
 * **Real-time Visualizations**: Observe latent factor evolution, convergence curves, and recommendation breakdowns as models train.
 * **Hyperparameter Tuning**: Utilize Bayesian optimization (Optuna) for automated parameter search.
 * **Dataset Generation Wizard**: Create, configure, and save synthetic datasets based on ground-truth user preferences (P) and item features (Q).
@@ -89,6 +89,7 @@ This application is divided into several key modules, accessible from the sideba
 * **PureSVD** - SVD decomposition for implicit feedback
 * **FunkSVD** - Stochastic Gradient Descent MF
 * **SVD++** - Factorization with implicit feedback
+* **ASVD** - Asymmetric SVD (no explicit user factors)
 * **ALS** - Alternating Least Squares
 * **ALS (Improved)** - ALS with bias regularization
 * **ALS (PySpark)** - Distributed implementation
@@ -104,6 +105,7 @@ This application is divided into several key modules, accessible from the sideba
 ### Ranking & Metric Learning
 * **BPR** - Bayesian Personalized Ranking
 * **BPR (Adaptive)** - BPR with adaptive negative sampling
+* **WMFBPR** - Weighted MF with BPR (uses PageRank)
 * **CML** - Collaborative Metric Learning
 * **SLIM** - Sparse Linear Methods
 
