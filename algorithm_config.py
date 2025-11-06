@@ -20,9 +20,15 @@ from algorithms import (
     SASRecRecommender,
     VAERecommender,
     SLIMRecommender,
-    FISMRecommender
+    FISMRecommender, __all__
 )
 from algorithms import AprioriRecommender, EclatRecommender, TopPopularRecommender, FPGrowthRecommender
+from algorithms.asvd import ASVDRecommender
+from algorithms.wmfbpr import WMFBPRRecommender
+from visualization.renderers.ASVDVisualizationRenderer import ASVDVisualizationRenderer
+from visualization.renderers.WMFBPRVisualizationRenderer import WMFBPRVisualizationRenderer
+from visualization.visualizers.WMFBPRVisualizer import WMFBPRVisualizer
+from visualization.visualizers.asvd_visualizer import ASVDVisualizer
 from visualization.renderers.AssociationRuleVisualizationRenderer import AssociationRuleVisualizationRenderer
 from visualization.renderers.TopPopularVisualizationRenderer import TopPopularVisualizationRenderer
 from visualization.visualizers.AssociationRuleVisualizer import AssociationRuleVisualizer
@@ -278,6 +284,39 @@ ALGORITHM_CONFIG = {
         "result_type": "matrix_factorization",
         "visualizer_class": SVDppVisualizer,
         "visualization_renderer_class": SVDppVisualizationRenderer
+    },
+    "ASVD": {
+        "model_class": ASVDRecommender,
+        "is_implicit": False,
+        "parameters": {
+            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 20},
+            "iterations": {"type": "slider", "label": "Iterations", "min": 1, "max": 30, "default": 20},
+            "learning_rate": {"type": "slider", "label": "Learning Rate", "min": 0.001, "max": 0.1, "default": 0.005, "step": 0.001, "format": "%.3f"},
+            "lambda_q": {"type": "slider", "label": "Reg. Q (Item)", "min": 0.0, "max": 1.0, "default": 0.02, "step": 0.01, "format": "%.2f"},
+            "lambda_x": {"type": "slider", "label": "Reg. X (Explicit Item)", "min": 0.0, "max": 1.0, "default": 0.02, "step": 0.01, "format": "%.2f"},
+            "lambda_y": {"type": "slider", "label": "Reg. Y (Implicit Item)", "min": 0.0, "max": 1.0, "default": 0.02, "step": 0.01, "format": "%.2f"},
+            "lambda_bu": {"type": "slider", "label": "Reg. Bu (User Bias)", "min": 0.0, "max": 1.0, "default": 0.02, "step": 0.01, "format": "%.2f"},
+            "lambda_bi": {"type": "slider", "label": "Reg. Bi (Item Bias)", "min": 0.0, "max": 1.0, "default": 0.02, "step": 0.01, "format": "%.2f"}
+        },
+        "info": "Asymmetric SVD. A model that removes explicit user factors (P_u) and instead constructs a user's profile from the items they have interacted with.",
+        "result_type": "matrix_factorization",
+        "visualizer_class": ASVDVisualizer,
+        "visualization_renderer_class": ASVDVisualizationRenderer
+    },
+    "WMFBPR": {
+        "model_class": WMFBPRRecommender,
+        "is_implicit": True,
+        "parameters": {
+            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
+            "iterations": {"type": "slider", "label": "Iterations", "min": 100, "max": 5000, "default": 500, "step": 100},
+            "learning_rate": {"type": "slider", "label": "Learning Rate (beta)", "min": 0.001, "max": 0.1, "default": 0.01, "step": 0.001, "format": "%.3f"},
+            "lambda_reg": {"type": "slider", "label": "Regularization (lambda)", "min": 0.0, "max": 0.1, "default": 0.01, "step": 0.001, "format": "%.3f"},
+            "pagerank_alpha": {"type": "slider", "label": "PageRank Alpha", "min": 0.5, "max": 0.99, "default": 0.85, "step": 0.01, "help": "Decay factor for PageRank calculation of item weights."}
+        },
+        "info": "Weighted Matrix Factorization + BPR. This model pre-computes global item 'importance' using PageRank and integrates it into the BPR scoring function.",
+        "result_type": "bpr",
+        "visualizer_class": WMFBPRVisualizer,
+        "visualization_renderer_class": WMFBPRVisualizationRenderer
     },
     "WRMF": {
         "model_class": WRMFRecommender,

@@ -4,28 +4,27 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-from .BPRVisualizer import BPRVisualizer # Inherit from BPRVisualizer
+from .BPRVisualizer import BPRVisualizer
 from visualization.components.ConvergencePlotter import ConvergencePlotter
-from visualization.components.EmbeddingTSNEPlotter import EmbeddingTSNEPlotter # 1. IMPORT NEW PLOTTER
+from visualization.components.EmbeddingTSNEPlotter import EmbeddingTSNEPlotter
+from visualization.components.FactorMatrixPlotter import FactorMatrixPlotter
+from visualization.components.RecommendationBreakdownPlotter import RecommendationBreakdownPlotter
 
 class BPRAdaptiveVisualizer(BPRVisualizer):
     """Specific visualizer for BPR (Adaptive)."""
     def __init__(self, k_factors, plot_interval=5):
-        # Call the parent __init__ but override the name
         super().__init__(k_factors, plot_interval)
         self.algorithm_name = "BPR (Adaptive)"
         self.visuals_dir = os.path.join(self.visuals_base_dir, self.algorithm_name, self.run_timestamp)
-        os.makedirs(self.visuals_dir, exist_ok=True) # Ensure it exists
+        os.makedirs(self.visuals_dir, exist_ok=True)
 
-        # Re-instantiate plotters with the correct directory
         self.convergence_plotter = ConvergencePlotter(self.visuals_dir)
-        self.matrix_plotter = self.matrix_plotter # Can reuse parent's
-        self.breakdown_plotter = self.breakdown_plotter # Can reuse parent's
-        self.tsne_plotter = EmbeddingTSNEPlotter(self.visuals_dir) # 2. INSTANTIATE TSNE PLOTTER
+        self.matrix_plotter = FactorMatrixPlotter(self.visuals_dir, self.k_factors) # <-- FIX
+        self.breakdown_plotter = RecommendationBreakdownPlotter(self.visuals_dir) # <-- FIX
+        self.tsne_plotter = EmbeddingTSNEPlotter(self.visuals_dir)
 
-        # Add new history key
         self.history['avg_negative_score'] = []
-        self.history['auc'] = [] # 3. ADD AUC TO HISTORY
+        self.history['auc'] = []
 
     def record_iteration(self, iteration_num, total_iterations, P, Q,
                          p_change, q_change, **kwargs):

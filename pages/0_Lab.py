@@ -20,7 +20,6 @@ from utils import (
     calculate_regression_metrics,
     precision_recall_at_k
 )
-from algorithms import *
 
 st.set_page_config(page_title="Recommender System Lab", layout="wide")
 st.title("Recommender System Laboratory")
@@ -126,7 +125,6 @@ if run_button:
                 vis_sig = inspect.signature(VisClass.__init__)
                 vis_args = {}
 
-                # --- START FIX ---
                 # Check for all known dynamic constructor arguments
                 if 'k_factors' in vis_sig.parameters:
                     vis_args['k_factors'] = model_params.get('k', 0)
@@ -134,7 +132,6 @@ if run_button:
                     vis_args['k'] = model_params.get('k', 10)
                 if 'algorithm_name' in vis_sig.parameters:
                     vis_args['algorithm_name'] = algorithm
-                # --- END FIX ---
                 if 'movie_titles_df' in vis_sig.parameters:
                     vis_args['movie_titles_df'] = st.session_state.get('movie_titles')
                 if 'item_id_map' in vis_sig.parameters:

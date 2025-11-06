@@ -49,5 +49,7 @@ __all__ = [
     'TopPopularRecommender',
     'AprioriRecommender',
     'FPGrowthRecommender',
-    'EclatRecommender'
+    'EclatRecommender',
+    'ASVDRecommender',
+    'WMFBPRRecommender'
 ]
