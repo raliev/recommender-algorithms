@@ -9,6 +9,8 @@
 
 A comprehensive Streamlit application for experimenting with state-of-the-art recommendation algorithms. This interactive laboratory provides real-time training, visualization, and analysis of various recommender system algorithms, making it an ideal companion to the book.
 
+**Important:** This application is designed primarily *for use with small datasets*. While it can also handle larger ones, some visualizations may become less informative in that case. Certain algorithms may show weaker performance on very small datasets. Therefore, this tool is not intended to serve as a comprehensive benchmark for algorithms on full-scale datasets — that was never its purpose. Its main goal is academic and educational exploration.
+
 ![Book Cover](https://testmysearch.com/img/ra-ws.jpg)
 
 ## Key Features
