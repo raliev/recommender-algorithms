@@ -57,3 +57,13 @@ This visualization breaks down how FunkSVD uses the learned latent factors (P an
 1.  **User History:** Shows the items the user has rated and the ratings given.
 2.  **Aggregated Scores:** Shows the predicted rating scores calculated as $P_u \cdot Q^T$. These scores directly represent the model's prediction for each item's rating by that user.
 3.  **Top-K Recommendations:** Highlights the items predicted to have the highest rating *that the user has not already rated*.
+
+---
+### Error Distribution
+This plot shows the **Absolute Error** (`|Actual Rating - Predicted Rating|`) for every single rating in the **training set**, sorted from largest error to smallest.
+
+* **X-axis:** The percentile of the prediction, from the worst prediction (0%) to the best (100%).
+* **Y-axis:** The absolute error value.
+* **What to look for:** This plot reveals *how* your model is wrong.
+  * **A "long tail" (a steep drop on the left):** This means a small number of predictions have a *very* high error, but most predictions are quite good. Your high RMSE is caused by a few big misses.
+  * **A "flat" line:** This means *all* of your predictions are off by a similar (and probably large) amount. The model is failing to learn the underlying patterns.s

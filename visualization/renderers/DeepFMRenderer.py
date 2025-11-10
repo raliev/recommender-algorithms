@@ -2,18 +2,10 @@ import os
 from .NCFVisualizationRenderer import NCFVisualizationRenderer
 
 class DeepFMRenderer(NCFVisualizationRenderer):
-    """
-    Renders visualizations specific to DeepFM.
-    It inherits from NCFVisualizationRenderer because the plot types
-    (Objective, Snapshots, Breakdown) are the same.
-    """
     def __init__(self, run_dir, explanations):
-        """
-        Initialize the renderer.
-        """
-        super().__init__(run_dir, explanations) # Pass explanations to base
-        self.algorithm_name = "DeepFM" # Set correct algorithm name
-        self.run_timestamp = os.path.basename(run_dir) # Get timestamp from dir
+        super().__init__(run_dir, explanations)
+        self.algorithm_name = "DeepFM"
+        self.run_timestamp = os.path.basename(run_dir)
 
         self.explanations.update({
             "Objective": "Shows the training loss (Binary Cross-Entropy) over epochs. DeepFM combines Linear, FM, and MLP components to predict interaction probability. A decreasing trend indicates convergence.",

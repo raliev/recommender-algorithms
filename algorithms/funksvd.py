@@ -66,6 +66,7 @@ class FunkSVDRecommender(Recommender):
                 progress_callback((i + 1) / self.iterations)
 
         if visualizer:
-            visualizer.end_run()
+            R_predicted_final = self.P @ self.Q.T
+            visualizer.end_run(R_predicted_final=R_predicted_final)
 
         return self

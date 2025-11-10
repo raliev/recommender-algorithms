@@ -137,7 +137,7 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
                 return value_to_optimize
 
             except Exception as e:
-                st.error(f"Error running {algo_name} with params {model_params}: {e}")
+                st.error(f"There are some issues with {algo_name} with params {model_params}: {e}")
                 return float('inf') # Error case
 
         algo_config_all = ALGORITHM_CONFIG.get(algo_name, {})

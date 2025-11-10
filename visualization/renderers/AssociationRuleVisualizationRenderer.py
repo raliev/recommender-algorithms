@@ -10,6 +10,11 @@ class AssociationRuleVisualizationRenderer(BaseVisualizationRenderer):
     Renders visualizations for Association Rule models.
     It loads and displays DataFrames from JSON files.
     """
+    def __init__(self, run_dir, explanations, algorithm_name="Association Rules"):
+        """Initialize the renderer."""
+        super().__init__(run_dir, explanations)
+        self.algorithm_name = algorithm_name
+        self.run_timestamp = os.path.basename(run_dir)
 
     def _render_dataframe(self, manifest_entry, column=None):
         """Helper to load and render a DataFrame."""
@@ -23,7 +28,6 @@ class AssociationRuleVisualizationRenderer(BaseVisualizationRenderer):
         try:
             df = pd.read_json(file_path, orient='records')
 
-            # Convert antecedent/consequent lists back to strings for display
             if 'antecedents' in df.columns:
                 df['antecedents'] = df['antecedents'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
             if 'consequents' in df.columns:
@@ -40,21 +44,7 @@ class AssociationRuleVisualizationRenderer(BaseVisualizationRenderer):
         except Exception as e:
             container.error(f"Error loading {manifest_entry['name']}: {e}")
 
-    def render(self):
-        manifest_path = os.path.join(self.run_dir, 'visuals.json')
-        if not os.path.exists(manifest_path):
-            st.warning(f"Visuals manifest 'visuals.json' not found in {self.run_dir}.")
-            return
-
-        try:
-            with open(manifest_path, 'r') as f:
-                manifest = json.load(f)
-        except Exception as e:
-            st.error(f"Error loading 'visuals.json': {e}")
-            return
-
-        st.header("Model Internals")
-
+    def _render_plots(self, manifest):
         itemsets_entry = next((e for e in manifest if e["interpretation_key"] == "Frequent Itemsets"), None)
         rules_entry = next((e for e in manifest if e["interpretation_key"] == "Association Rules"), None)
 

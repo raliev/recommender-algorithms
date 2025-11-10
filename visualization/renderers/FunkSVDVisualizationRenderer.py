@@ -31,79 +31,10 @@ class FunkSVDVisualizationRenderer(BaseVisualizationRenderer):
             "Recommendation Breakdown": "This visualization breaks down how FunkSVD uses the learned latent factors (P and Q) to generate final scores for a single sample user."
         })
 
-    def render(self):
-        st.header(f"Visualizations for {self.run_timestamp}")
-        st.write(f"Displaying visualizations for algorithm: {self.algorithm_name}")
+    def _render_plots(self, manifest):
+        self.show_convergence_plot(manifest)
+        self.show_error_distribution(manifest)
+        self.show_factor_snapshots(manifest)
+        self.show_breakdown_plot(manifest)
 
-        manifest_path = os.path.join(self.run_dir, 'visuals.json')
-        if not os.path.exists(manifest_path):
-            st.warning(f"Visuals manifest 'visuals.json' not found in {self.run_dir}. Please ensure the visualizer generated the manifest.")
-            return
 
-        try:
-            with open(manifest_path, 'r') as f:
-                manifest = json.load(f)
-        except Exception as e:
-            st.error(f"Error loading 'visuals.json': {e}")
-            return
-
-        if not manifest:
-            st.info("No visualizations were generated for this run according to visuals.json.")
-            return
-
-        # --- Render Convergence Plots (Adapted from ALS renderer) ---
-        st.subheader("Convergence Plots")
-
-        # 1. Find Objective plot (RMSE)
-        objective_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "Objective"), None)
-        # 2. Find Factor Change plot
-        factor_change_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "Factor Change"), None)
-
-        col_conv1, col_conv2 = st.columns(2)
-        if objective_plot:
-            generic_renderers.render_line_plot(self.run_dir, objective_plot, self.explanations, col_conv1)
-        else:
-            col_conv1.info("No objective convergence plot (RMSE) found.")
-
-        if factor_change_plot:
-            generic_renderers.render_line_plot(self.run_dir, factor_change_plot, self.explanations, col_conv2)
-        else:
-            col_conv2.info("No factor change convergence plot found.")
-
-        st.divider()
-
-        # --- Render Snapshots (Original logic) ---
-        snapshots = [e for e in manifest if e["type"] == "factor_snapshot"]
-        snapshots.sort(key=lambda x: x["iteration"]) # Sort by iteration number
-
-        if snapshots:
-            first_snapshot = snapshots[0]
-            last_snapshot = snapshots[-1] if len(snapshots) > 1 else snapshots[0]
-
-            if first_snapshot["iteration"] == last_snapshot["iteration"]:
-                st.subheader(f"Snapshot: Iteration {first_snapshot['iteration']}")
-                generic_renderers.render_factor_snapshot(self.run_dir, first_snapshot, self.explanations, st)
-            else:
-                st.subheader(f"Snapshot Comparison: Iteration {first_snapshot['iteration']} vs Iteration {last_snapshot['iteration']}")
-                col_snap1, col_snap2 = st.columns(2)
-
-                # Render first snapshot in col1
-                generic_renderers.render_factor_snapshot(self.run_dir, first_snapshot, self.explanations, col_snap1)
-                # Render last snapshot in col2
-                generic_renderers.render_factor_snapshot(self.run_dir, last_snapshot, self.explanations, col_snap2)
-        else:
-            st.info("No latent factor snapshots found.")
-
-        st.divider()
-
-        # --- Render Recommendation Breakdown (Adapted from WRMF renderer) ---
-        st.subheader("Recommendation Breakdown")
-
-        breakdown_plot = next((e for e in manifest if e["type"] == "recommendation_breakdown"), None)
-
-        if breakdown_plot:
-            generic_renderers.render_recommendation_breakdown(
-                self.run_dir, breakdown_plot, self.explanations, st
-            )
-        else:
-            st.info("No recommendation breakdown plot was generated for this run.")

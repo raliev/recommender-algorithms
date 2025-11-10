@@ -2,12 +2,7 @@ import os
 import json
 import numpy as np
 
-from .BPRVisualizer import BPRVisualizer # Inherit from BPRVisualizer
-from visualization.components.ConvergencePlotter import ConvergencePlotter
-from visualization.components.FactorMatrixPlotter import FactorMatrixPlotter
-from visualization.components.RecommendationBreakdownPlotter import RecommendationBreakdownPlotter
-from visualization.components.EmbeddingTSNEPlotter import EmbeddingTSNEPlotter
-from visualization.components.VectorHistogramPlotter import VectorHistogramPlotter
+from .BPRVisualizer import BPRVisualizer
 
 class WMFBPRVisualizer(BPRVisualizer):
     """
@@ -16,28 +11,17 @@ class WMFBPRVisualizer(BPRVisualizer):
     pre-calculated PageRank item weights.
     """
     def __init__(self, k_factors, plot_interval=5):
-        # Call the parent __init__
         super().__init__(k_factors, plot_interval)
         self.algorithm_name = "WMFBPR"
         self.visuals_dir = os.path.join(self.visuals_base_dir, self.algorithm_name, self.run_timestamp)
         os.makedirs(self.visuals_dir, exist_ok=True)
 
-        self.convergence_plotter = ConvergencePlotter(self.visuals_dir)
-        self.matrix_plotter = FactorMatrixPlotter(self.visuals_dir, self.k_factors)
-        self.breakdown_plotter = RecommendationBreakdownPlotter(self.visuals_dir)
-        self.tsne_plotter = EmbeddingTSNEPlotter(self.visuals_dir)
-
-        # This one was already correct
-        self.histogram_plotter = VectorHistogramPlotter(self.visuals_dir)
-
         self.item_weights = None
 
     def start_run(self, params, R=None, weights=None):
         """Called at the beginning of the fit method."""
-        # Now call the base start_run from AlgorithmVisualizer, not BPRVisualizer
-        # to avoid BPRVisualizer's specific start_run
         super(BPRVisualizer, self).start_run(params)
-        self.R = R # Store R for breakdown plot
+        self.R = R
         self.item_weights = weights
 
     def _plot_item_weights(self):
@@ -59,11 +43,8 @@ class WMFBPRVisualizer(BPRVisualizer):
         Called at the end of the fit method.
         Plots convergence, breakdown, and the new item weights.
         """
-        # Call the parent's end_run, which plots convergence, breakdown, etc.
         super().end_run()
 
-        # Add the new plot
         self._plot_item_weights()
 
-        # Re-save the manifest to include the new plot
-        self._save_visuals_manifest()
+        self._save_visuals_manifest(append=True) # Append the new plot

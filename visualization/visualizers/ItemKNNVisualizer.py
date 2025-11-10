@@ -4,20 +4,13 @@ from datetime import datetime
 import numpy as np
 
 from .AlgorithmVisualizer import AlgorithmVisualizer
-from visualization.components.SimilarityMatrixPlotter import SimilarityMatrixPlotter
-from visualization.components.RecommendationBreakdownPlotter import RecommendationBreakdownPlotter
-
 
 class ItemKNNVisualizer(AlgorithmVisualizer):
     """
     Specific visualizer for ItemKNN.
-    Now composes plotting helpers instead of containing them directly.
     """
     def __init__(self, **kwargs):
         super().__init__("ItemKNN")
-
-        self.similarity_plotter = SimilarityMatrixPlotter(self.visuals_dir)
-        self.breakdown_plotter = RecommendationBreakdownPlotter(self.visuals_dir)
 
     def _plot_recommendation_breakdown(self, R, final_similarity_matrix):
         """
@@ -29,47 +22,27 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
                   "Skipping recommendation breakdown plot.")
             return
 
-        # 1. Find a suitable sample user (logic from WRMF/BPR)
-        user_interaction_counts = (R > 0).sum(axis=1)
-        sample_user_idx = np.where(
-            (user_interaction_counts >= 5) & (user_interaction_counts <= 20)
-        )[0]
+        # 1. Use base helper to find the user
+        user_idx, history_vec = self._find_sample_user(R)
+        if user_idx is None:
+            return
 
-        if len(sample_user_idx) > 0:
-            sample_user_idx = sample_user_idx[0]
-        elif user_interaction_counts.sum() > 0:
-            sample_user_idx = np.argmax(user_interaction_counts)
-        else:
-            sample_user_idx = 0
+        # 2. Calculate the algorithm-specific score vector
+        result_vec = history_vec @ final_similarity_matrix
 
-        user_history_vector = R[sample_user_idx, :]
-
-        result_vector = user_history_vector @ final_similarity_matrix
-
-        num_items = R.shape[1]
-        item_names = [f"Item {i}" for i in range(num_items)]
-
-        manifest_entry = self.breakdown_plotter.plot(
-            user_history_vector=user_history_vector,
-            result_vector=result_vector,
-            item_names=item_names,
-            user_id=str(sample_user_idx),
-            k=10,
-            filename="recommendation_breakdown.png",
+        # 3. Use base helper to plot
+        self._plot_recommendation_breakdown_generic(
+            user_id=str(user_idx),
+            user_history_vector=history_vec,
+            result_vector=result_vec,
             interpretation_key="Recommendation Breakdown"
         )
-        self.visuals_manifest.append(manifest_entry)
 
     def visualize_fit_results(self, R, final_similarity_matrix=None,
                               raw_similarity_matrix=None,
                               co_rated_counts_matrix=None, params=None):
         """
         Generates visualizations for ItemKNN results.
-        :param R: The training user-item matrix
-        :param final_similarity_matrix: The final, possibly adjusted, similarity matrix.
-        :param raw_similarity_matrix: The initial, raw similarity matrix (optional).
-        :param co_rated_counts_matrix: Matrix showing how many items were co-rated (optional).
-        :param params: Parameters of the algorithm run.
         """
         self.start_run(params)
         self.visuals_manifest = []
@@ -82,9 +55,7 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
         )
         self.visuals_manifest.append(manifest_entry_final_heatmap)
 
-        # 2. Plot Raw Similarity Matrix Heatmap (if provided)
         if raw_similarity_matrix is not None:
-            # ... (append to manifest)
             manifest_entry_raw_heatmap = self.similarity_plotter.plot_heatmap(
                 matrix=raw_similarity_matrix,
                 title="Raw Item-Item Similarity Matrix (Sampled)",
@@ -93,9 +64,7 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
             )
             self.visuals_manifest.append(manifest_entry_raw_heatmap)
 
-        # 3. Plot Co-rated Counts Matrix Heatmap (if provided)
         if co_rated_counts_matrix is not None:
-            # ... (append to manifest)
             manifest_entry_co_rated_heatmap = self.similarity_plotter.plot_heatmap(
                 matrix=co_rated_counts_matrix,
                 title="Co-rated Counts Matrix (Sampled)",
@@ -104,7 +73,6 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
             )
             self.visuals_manifest.append(manifest_entry_co_rated_heatmap)
 
-        # 4. Plot Histogram of Final Similarity Values
         manifest_entry_hist = self.similarity_plotter.plot_histogram(
             matrix=final_similarity_matrix,
             title="Distribution of Final Item-Item Similarity Values (Non-Zero)",
@@ -115,8 +83,7 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
 
         self._plot_recommendation_breakdown(R, final_similarity_matrix)
 
-        # Mark as run (no iterations for this type of visualizer)
         self.params_saved['iterations_run'] = 1
         self._save_params()
-        self._save_history() # History might be empty, but consistent
+        self._save_history()
         self._save_visuals_manifest()

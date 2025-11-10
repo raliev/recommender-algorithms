@@ -210,7 +210,12 @@ if run_button:
                         json.dump(st.session_state['metrics'], f, indent=4)
                 except Exception as e:
                     st.toast(f"Failed to save metrics: {e}")
-
+        if visualizer and test_df_8020 is not None and not is_implicit_model:
+            try:
+                visualizer.plot_test_errors(predicted_df, test_df_8020)
+                st.toast("Generated test error distribution plot.")
+            except Exception as e:
+                st.toast(f"Could not generate test error plot: {e}")
         st.session_state.selected_visuals_run_dir = st.session_state['results']['visuals_dir']
         st.rerun()
 

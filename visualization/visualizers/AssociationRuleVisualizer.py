@@ -18,7 +18,6 @@ class AssociationRuleVisualizer(AlgorithmVisualizer):
         # Convert frozensets to lists for JSON serialization
         df_copy = df.copy()
         for col in df_copy.columns:
-            # Check if all items in the column are frozensets
             if not df_copy[col].empty and all(isinstance(item, frozenset) for item in df_copy[col]):
                 df_copy[col] = df_copy[col].apply(list)
 
@@ -30,10 +29,9 @@ class AssociationRuleVisualizer(AlgorithmVisualizer):
         """
         Called once by the algorithm's fit method.
         """
-        self.start_run(params) # Creates dir, saves params 
+        self.start_run(params)
         self.visuals_manifest = []
 
-        # 1. Save Frequent Itemsets
         if not frequent_itemsets.empty:
             itemsets_file = self._save_dataframe_to_json(
                 frequent_itemsets.nlargest(50, 'support'),
@@ -46,7 +44,6 @@ class AssociationRuleVisualizer(AlgorithmVisualizer):
                 "interpretation_key": "Frequent Itemsets"
             })
 
-        # 2. Save Association Rules
         if not rules.empty:
             rules_file = self._save_dataframe_to_json(
                 rules.nlargest(100, 'confidence'),
@@ -59,8 +56,7 @@ class AssociationRuleVisualizer(AlgorithmVisualizer):
                 "interpretation_key": "Association Rules"
             })
 
-        # Finalize run
-        self.params_saved['iterations_run'] = 1 # Mark as 1 "step"
-        self._save_params() # 
-        self._save_history() # Saves an empty history.json 
-        self._save_visuals_manifest() # 
+        self.params_saved['iterations_run'] = 1
+        self._save_params()
+        self._save_history()
+        self._save_visuals_manifest()

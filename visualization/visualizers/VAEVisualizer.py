@@ -1,9 +1,7 @@
 import os
 import numpy as np
 from .AlgorithmVisualizer import AlgorithmVisualizer
-from visualization.components.ConvergencePlotter import ConvergencePlotter
-from visualization.components.LatentDistributionPlotter import LatentDistributionPlotter
-from visualization.components.FactorMatrixPlotter import FactorMatrixPlotter # For reconstruction
+
 
 class VAEVisualizer(AlgorithmVisualizer):
     """
@@ -18,19 +16,11 @@ class VAEVisualizer(AlgorithmVisualizer):
         self.last_recon = None
         self.last_input = None
 
-        # Instantiate components
-        self.convergence_plotter = ConvergencePlotter(self.visuals_dir)
-        self.distribution_plotter = LatentDistributionPlotter(self.visuals_dir)
-        # We can reuse the FactorMatrixPlotter to plot the reconstruction
-        self.matrix_plotter = FactorMatrixPlotter(self.visuals_dir, self.k_factors)
-
 
     def record_iteration(self, iteration_num, total_iterations, objective, mu, recon_x, x_input, **kwargs):
         """Records VAE data and stores final batch info."""
-        # Call base to update iteration count and store objective
         super().record_iteration(iteration_num, objective=objective)
 
-        # Store the outputs from the *last* iteration
         if iteration_num == total_iterations:
             self.last_mu = mu
             self.last_recon = recon_x
@@ -52,15 +42,13 @@ class VAEVisualizer(AlgorithmVisualizer):
     def _plot_reconstruction_example(self):
         """Plots a heatmap of the original vs. reconstructed input for the last batch."""
         if self.last_recon is not None and self.last_input is not None:
-            # The FactorMatrixPlotter was designed for P and Q
-            # Let's just plot the reconstruction matrix directly
             manifest_entry_recon = self.matrix_plotter._plot_heatmap(
                 self.last_recon,
                 title=f'Reconstructed Batch (Last Epoch)',
                 filename='recon_heatmap.png',
-                sample_size=self.last_recon.shape[0] # Show full batch
+                sample_size=self.last_recon.shape[0]
             )
-            manifest_entry_recon["type"] = "similarity_heatmap" # Use a generic type
+            manifest_entry_recon["type"] = "similarity_heatmap"
             manifest_entry_recon["interpretation_key"] = "Reconstruction Heatmap"
             self.visuals_manifest.append(manifest_entry_recon)
 
@@ -68,22 +56,18 @@ class VAEVisualizer(AlgorithmVisualizer):
                 self.last_input,
                 title=f'Original Batch (Last Epoch)',
                 filename='original_heatmap.png',
-                sample_size=self.last_input.shape[0] # Show full batch
+                sample_size=self.last_input.shape[0]
             )
             manifest_entry_orig["type"] = "similarity_heatmap"
             manifest_entry_orig["interpretation_key"] = "Reconstruction Heatmap"
             self.visuals_manifest.append(manifest_entry_orig)
-
 
     def end_run(self):
         """Called at the end of the fit method."""
         self.params_saved['iterations_run'] = self.iterations_run
         self._save_params()
 
-        # Plot objective (loss)
         self._plot_convergence_graphs()
-
-        # Plot the new VAE-specific graphs
         self._plot_latent_distribution()
         self._plot_reconstruction_example()
 

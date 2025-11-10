@@ -13,8 +13,3 @@ class DeepFMVisualizer(NCFVisualizer):
         self.algorithm_name = "DeepFM"
         self.visuals_dir = os.path.join(self.visuals_base_dir, self.algorithm_name, self.run_timestamp)
         os.makedirs(self.visuals_dir, exist_ok=True)
-
-        self.convergence_plotter = self.convergence_plotter.__class__(self.visuals_dir)
-        if self.matrix_plotter:
-            self.matrix_plotter = self.matrix_plotter.__class__(self.visuals_dir, self.k_factors)
-        self.breakdown_plotter = self.breakdown_plotter.__class__(self.visuals_dir)
