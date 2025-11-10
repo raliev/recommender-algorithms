@@ -25,14 +25,13 @@ A comprehensive Streamlit application for experimenting with state-of-the-art re
 ### Prerequisites
 
 * Python 3.8 or higher
-* pip package manager
 
 ### Installation
 
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/yourusername/recommender-lab.git
+    git clone https://github.com/raliev/recommender-lab.git
     cd recommender-lab
     ```
 
@@ -70,52 +69,34 @@ This application is divided into several key modules, accessible from the sideba
 
 ## Supported Algorithms
 
-### Matrix Factorization Methods
-
-* **SVD** - Singular Value Decomposition
-* **PureSVD** - SVD decomposition for implicit feedback
-* **FunkSVD** - Stochastic Gradient Descent MF
-* **SVD++** - Factorization with implicit feedback
-* **ASVD** - Asymmetric SVD (no explicit user factors)
 * **ALS** - Alternating Least Squares
 * **ALS (Improved)** - ALS with bias regularization
 * **ALS (PySpark)** - PySpark implementation
+* **ASVD** - Asymmetric SVD (no explicit user factors)
+* **PureSVD** - SVD decomposition for implicit feedback
+* **FunkSVD** - Stochastic Gradient Descent MF
+* **SVD++** - Factorization with implicit feedback
 * **NMF** - Non-negative Matrix Factorization
 * **WRMF** - Weighted Regularized Matrix Factorization
 * **FISM** - Factorized Item Similarity Models
 * **EASE** - Embarrassingly Shallow Autoencoders 
-
-### Neighborhood-Based Methods
-
 * **ItemKNN** - Item-based Collaborative Filtering
 * **UserKNN** - User-based Collaborative Filtering 
 * **Slope One** - Fast, simple collaborative filtering
-
-### Ranking & Metric Learning
-
 * **BPR** - Bayesian Personalized Ranking
 * **BPR (Adaptive)** - BPR with adaptive negative sampling
 * **BPR+SVDPP** - BPR combined with SVD++ implicit factors
 * **WMFBPR** - Weighted MF with BPR (uses PageRank)
 * **CML** - Collaborative Metric Learning
 * **SLIM** - Sparse Linear Methods
-
-### Deep Learning & Sequential Methods
-
 * **NCF/NeuMF** - Neural Collaborative Filtering 
 * **DeepFM** - Deep Factorization Machines 
 * **SimpleX** - Simple bi-encoder with contrastive loss 
 * **SASRec** - Self-Attentive Sequential Recommendation
 * **VAE** - Variational Autoencoders for Collaborative Filtering
-
-### Association Rule Mining
-
 * **Apriori** - Classic association rule mining
 * **FP-Growth** - Efficient tree-based rule mining
 * **Eclat** - Vertical layout-based rule mining
-
-### Baseline Methods
-
 * **Top Popular** - Non-personalized popularity baseline
 
 ## Visualizations
