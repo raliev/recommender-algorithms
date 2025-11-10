@@ -86,7 +86,7 @@ def initialize_session_state():
     if 'R_final' not in st.session_state:
         st.session_state.R_final = pd.DataFrame()
     if 'selected_ground_truth' not in st.session_state:
-        st.session_state.selected_ground_truth = "the_movies_dataset"
+        st.session_state.selected_ground_truth = "movies_and_genres"
 
     if 'sampled_item_names' not in st.session_state:
         st.session_state.sampled_item_names = []
@@ -139,12 +139,13 @@ if selected_gt_name != st.session_state.selected_ground_truth:
     st.rerun()
 
 # Load the selected ground truth data
-ALL_FEATURES, ALL_ITEMS, ITEM_FEATURE_MAP = load_ground_truth_data(selected_gt_name)
-if not ALL_FEATURES or not ALL_ITEMS:
-    st.error(f"Failed to load data for '{selected_gt_name}'. Check file integrity.")
-    st.stop()
+with st.spinner(f"Loading '{selected_gt_name}' dataset..."):
+    ALL_FEATURES, ALL_ITEMS, ITEM_FEATURE_MAP = load_ground_truth_data(selected_gt_name)
+    if not ALL_FEATURES or not ALL_ITEMS:
+        st.error(f"Failed to load data for '{selected_gt_name}'. Check file integrity.")
+        st.stop()
 
-Q_full = get_full_item_feature_matrix(ITEM_FEATURE_MAP, ALL_ITEMS, ALL_FEATURES)
+    Q_full = get_full_item_feature_matrix(ITEM_FEATURE_MAP, ALL_ITEMS, ALL_FEATURES)
 
 st.session_state.all_available_features = ALL_FEATURES
 show_sampling = len(ALL_ITEMS) > SAMPLING_THRESHOLD
