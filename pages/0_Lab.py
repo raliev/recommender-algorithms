@@ -131,6 +131,8 @@ if run_button:
                     vis_args['k_factors'] = model_params.get('k', 0)
                 if 'k' in vis_sig.parameters:
                     vis_args['k'] = model_params.get('k', 10)
+                if 'algorithm_name' in vis_sig.parameters:
+                    vis_args['algorithm_name'] = algorithm
                 visualizer = VisClass(**vis_args)
                 params_to_save = {
                     **model_params,
