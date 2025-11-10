@@ -64,10 +64,10 @@ def render_sidebar():
     data = None
     show_internals = st.sidebar.checkbox("Show Internals / Visualizations", value=True,
                                          help="Generate and display visualizations during/after "
-                                              "training (if available for the algorithm).") #
+                                              "training (if available for the algorithm).")
     if data_source == "MovieLens (Filtered Subset)":
         st.sidebar.info("A fast subset of the most active users and popular movies.")
-        st.sidebar.subheader("1. Select Data Size") #
+        st.sidebar.subheader("1. Select Data Size")
         data_params['num_users'] = st.sidebar.slider("Number of Users to Use", 50, 610, 100)
         data_params['num_movies'] = st.sidebar.slider("Number of Items to Use", 100, 2000, 500)
     elif data_source == "Synthetic 20x20":
@@ -79,7 +79,7 @@ def render_sidebar():
     st.sidebar.subheader(f"2. {algorithm} Hyperparameters")
     algo_info = ALGORITHM_CONFIG[algorithm].get("info")
     if algo_info:
-        st.sidebar.info(algo_info) #
+        st.sidebar.info(algo_info)
     param_definitions = ALGORITHM_CONFIG[algorithm].get("parameters", {})
     if 'current_sidebar_algo' not in st.session_state or st.session_state.current_sidebar_algo != algorithm:
         st.session_state.current_sidebar_algo = algorithm
@@ -245,7 +245,6 @@ def render_previous_runs_explorer(algo_name, visuals_base_dir):
     )
 
 def get_movie_title(movie_id, movie_titles_df):
-    # ... (existing function is unchanged) ...
     if movie_titles_df is None:
         return f"Movie ID: {movie_id}"
     try:
@@ -317,289 +316,336 @@ def render_results_tabs(results):
             return df
 
     with tab1:
-        st.subheader(f"Inside the {results['algo_name']} Model")
-        algo_config = ALGORITHM_CONFIG.get(results['algo_name'], {})
-        result_type = algo_config.get("result_type", "other")
+        try:
+            st.subheader(f"Inside the {results['algo_name']} Model")
+            algo_config = ALGORITHM_CONFIG.get(results['algo_name'], {})
+            result_type = algo_config.get("result_type", "other")
 
-        if result_type == "matrix_factorization":
-            st.write("These models decompose the original matrix into User-Factors (P) and Item-Factors (Q).")
-            if results.get('P') is not None and results.get('Q') is not None:
-                q_df = pd.DataFrame(results['Q'], index=results['original_df'].columns)
-                q_df_renamed = rename_columns_to_titles(q_df.T).T
-                col1, col2 = st.columns(2)
-                with col1: st.write("**P (Users x Factors)**"); st.dataframe(pd.DataFrame(results['P'], index=results['original_df'].index).style.format("{:.2f}"))
-                with col2: st.write("**Q (Items x Factors)**"); st.dataframe(q_df_renamed.style.format("{:.2f}"))
-            else:
-                st.info(f"{results['algo_name']} does not expose user/item factor matrices in a simple format.")
+            if result_type == "matrix_factorization":
+                st.write("These models decompose the original matrix into User-Factors (P) and Item-Factors (Q).")
+                if results.get('P') is not None and results.get('Q') is not None:
 
-        elif result_type == "knn_similarity":
-            st.write("These models compute or learn a **Similarity Matrix** to find similar users or items.")
-            sim_matrix = results.get('similarity_matrix')
+                    max_rows, max_cols = 50, 20
 
-            if sim_matrix is not None:
-                df = pd.DataFrame(sim_matrix)
-                if results['algo_name'] in ["ItemKNN", "SLIM", "FISM"]:
-                    df.index = results['original_df'].columns
-                    df.columns = results['original_df'].columns
+                    P_df = pd.DataFrame(results['P'], index=results['original_df'].index)
+                    q_df = pd.DataFrame(results['Q'], index=results['original_df'].columns)
+                    q_df_renamed = rename_columns_to_titles(q_df.T).T
+
+                    P_display = P_df
+                    Q_display = q_df_renamed
+
+                    if P_df.shape[0] > max_rows or P_df.shape[1] > max_cols:
+                        st.info(f"Displaying a subset ({min(max_rows, P_df.shape[0])} users, {min(max_cols, P_df.shape[1])} factors) of P and Q.")
+                        P_display = P_df.iloc[:max_rows, :max_cols]
+                        Q_display = q_df_renamed.iloc[:min(max(max_rows*2, 100), q_df_renamed.shape[0]), :max_cols]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("**P (Users x Factors) (subset)**")
+                        st.dataframe(P_display.style.format("{:.2f}"))
+                    with col2:
+                        st.write("**Q (Items x Factors) (subset)**")
+                        st.dataframe(Q_display.style.format("{:.2f}"))
+                else:
+                    st.info(f"{results['algo_name']} does not expose user/item factor matrices in a simple format.")
+
+            elif result_type == "knn_similarity":
+                st.write("These models compute or learn a **Similarity Matrix** to find similar users or items.")
+                sim_matrix = results.get('similarity_matrix')
+
+                if sim_matrix is not None:
+                    df = pd.DataFrame(sim_matrix)
+                    if results['algo_name'] in ["ItemKNN", "SLIM", "FISM"]:
+                        df.index = results['original_df'].columns
+                        df.columns = results['original_df'].columns
                     df = rename_columns_to_titles(rename_columns_to_titles(df.T).T)
-                else:
-                    df.index = results['original_df'].index
-                    df.columns = results['original_df'].index
-                st.write(f"**Learned Similarity Matrix (subset)**")
 
-                max_dim = 25
-                if df.shape[0] > max_dim:
-                    st.info(f"Displaying a {max_dim}x{max_dim} subset of the full similarity matrix.")
-                    df_subset = df.iloc[:max_dim, :max_dim]
+                    st.write(f"**Learned Similarity Matrix (subset)**")
+
+                    max_dim = 25
+                    if df.shape[0] > max_dim:
+                        st.info(f"Displaying a {max_dim}x{max_dim} subset of the full similarity matrix.")
+                        df_subset = df.iloc[:max_dim, :max_dim]
+                    else:
+                        df_subset = df
+                    fig = px.imshow(df_subset, text_auto=".2f", aspect="auto", title=f"{results['algo_name']} Similarity")
+                    st.plotly_chart(fig)
                 else:
-                    df_subset = df
-                fig = px.imshow(df_subset, text_auto=".2f", aspect="auto", title=f"{results['algo_name']} Similarity")
-                st.plotly_chart(fig)
+                    st.info("Similarity matrix not available.")
+
+            elif result_type == "vae":
+                st.write("Autoencoder models learn to **reconstruct** a user's interaction history from a compressed latent representation.")
+                recon_matrix = results.get('reconstructed_matrix')
+                if recon_matrix is not None:
+                    user_list = results['original_df'].index
+                    selected_user = st.selectbox("Select a User to Visualize:", options=user_list)
+                    original_vec = results['original_df'].loc[selected_user]
+
+                    if pd.api.types.is_numeric_dtype(user_list):
+                        user_list_as_list = list(user_list)
+                        user_index = user_list_as_list.index(selected_user)
+                    else:
+                        user_index = user_list.get_loc(selected_user)
+
+                    recon_vec = pd.Series(recon_matrix[user_index], index=original_vec.index)
+                    rated_items = original_vec[original_vec > 0].index
+                    top_unrated_recon = recon_vec.drop(rated_items).nlargest(10).index
+                    items_to_show = rated_items.union(top_unrated_recon)
+                    vis_df = pd.DataFrame({'Original Interaction': (original_vec[items_to_show] > 0).astype(int),'Reconstructed Score': recon_vec[items_to_show]})
+                    vis_df.index = vis_df.index.map(lambda mid: get_movie_title(mid, movie_titles_df))
+                    fig = px.bar(vis_df, barmode='group', title=f"Original vs. Reconstructed Interactions for User {selected_user}")
+                    st.plotly_chart(fig)
+                else: st.info("Reconstructed matrix not available.")
+
             else:
-                st.info("Similarity matrix not available.")
+                st.info(f"No specific internal visualization is available for {results['algo_name']}.")
 
-        elif result_type == "vae":
-            st.write("Autoencoder models learn to **reconstruct** a user's interaction history from a compressed latent representation.")
-            recon_matrix = results.get('reconstructed_matrix')
-            if recon_matrix is not None:
-                user_list = results['original_df'].index
-                selected_user = st.selectbox("Select a User to Visualize:", options=user_list)
-                original_vec = results['original_df'].loc[selected_user]
+        except Exception as e:
+            st.error(f"Failed to render 'Model Internals' tab: {e}")
+            st.exception(e)
 
-                # Handle both numeric and string user lists
-                if pd.api.types.is_numeric_dtype(user_list):
-                    user_list_as_list = list(user_list)
-                    user_index = user_list_as_list.index(selected_user)
-                else:
-                    user_index = user_list.get_loc(selected_user)
-
-                recon_vec = pd.Series(recon_matrix[user_index], index=original_vec.index)
-                rated_items = original_vec[original_vec > 0].index
-                top_unrated_recon = recon_vec.drop(rated_items).nlargest(10).index
-                items_to_show = rated_items.union(top_unrated_recon)
-                vis_df = pd.DataFrame({'Original Interaction': (original_vec[items_to_show] > 0).astype(int),'Reconstructed Score': recon_vec[items_to_show]})
-                vis_df.index = vis_df.index.map(lambda mid: get_movie_title(mid, movie_titles_df))
-                fig = px.bar(vis_df, barmode='group', title=f"Original vs. Reconstructed Interactions for User {selected_user}")
-                st.plotly_chart(fig)
-            else: st.info("Reconstructed matrix not available.")
-
-        else:
-            st.info(f"No specific internal visualization is available for {results['algo_name']}.")
 
     with tab2:
-        st.subheader("Original Data vs. Predicted Scores")
-        if 'BPR' in results['algo_name']: st.warning("Reminder: BPR outputs scores for ranking, not predicted ratings.")
+        try:
+            st.subheader("Original Data vs. Predicted Scores")
+            if 'BPR' in results['algo_name']: st.warning("Reminder: BPR outputs scores for ranking, not predicted ratings.")
 
-        original_df, predicted_df = results['original_df'], results['predicted_df']
-        max_users, max_items = 20, 20
+            original_df, predicted_df = results['original_df'], results['predicted_df']
+            max_users, max_items = 20, 20
 
-        original_df_renamed = rename_columns_to_titles(original_df)
-        predicted_df_renamed = rename_columns_to_titles(predicted_df)
+            original_df_renamed = rename_columns_to_titles(original_df)
+            predicted_df_renamed = rename_columns_to_titles(predicted_df)
 
-        if original_df.shape[0] > max_users or original_df.shape[1] > max_items:
-            st.info(f"Displaying a subset ({max_users} users, {max_items} items) of the full matrix for performance.")
-            display_original_df = original_df_renamed.iloc[:max_users, :max_items]
-            display_predicted_df = predicted_df_renamed.iloc[:max_users, :max_items]
-        else:
-            display_original_df, display_predicted_df = original_df_renamed, predicted_df_renamed
+            if original_df.shape[0] > max_users or original_df.shape[1] > max_items:
+                st.info(f"Displaying a subset ({max_users} users, {max_items} items) of the full matrix for performance.")
+                display_original_df = original_df_renamed.iloc[:max_users, :max_items]
+                display_predicted_df = predicted_df_renamed.iloc[:max_users, :max_items]
+            else:
+                display_original_df, display_predicted_df = original_df_renamed, predicted_df_renamed
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("**Original Data (subset)**")
-            st.dataframe(display_original_df)
-        with col2:
-            st.write("**Predictions (subset, new items highlighted)**")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Original Data (subset)**")
+                st.dataframe(display_original_df)
+            with col2:
+                st.write("**Predictions (subset, new items highlighted)**")
 
-            def style_predictions(row):
-                original_row = display_original_df.loc[row.name]
-                highlight = 'background-color: #d1ecf1; color: #0c5460; font-weight: bold;'
-                return [highlight if original_row[col] == 0 else '' for col in original_row.index]
+                def style_predictions(row):
+                    original_row = display_original_df.loc[row.name]
+                    highlight = 'background-color: #d1ecf1; color: #0c5460; font-weight: bold;'
+                    return [highlight if original_row[col] == 0 else '' for col in original_row.index]
 
-            st.dataframe(display_predicted_df.style.format("{:.2f}").apply(style_predictions, axis=1))
+                st.dataframe(display_predicted_df.style.format("{:.2f}").apply(style_predictions, axis=1))
 
-        is_generated_dataset = results.get('user_profiles') is not None and results.get('Q_matrix') is not None
-
-        algo_name = results['algo_name']
-        algo_config_all = ALGORITHM_CONFIG.get(algo_name, {})
-        is_implicit_model = algo_config_all.get("is_implicit", False)
-
-        if is_generated_dataset and not is_implicit_model:
-            st.divider()
-            st.subheader("Ground Truth Analysis (for reference only)")
-            st.info("The following matrices were used to **generate** this dataset. They were **not** passed to the recommender.")
-
-            p_matrix = results.get('user_profiles')
-            q_matrix = results.get('Q_matrix')
-
-            # Get the same user/item indices/names as the displayed subsets
-            user_subset_index = display_original_df.index
-            item_subset_index = display_original_df.columns
-
-            # Filter P and Q
-            P_subset = p_matrix.loc[user_subset_index] # Selects rows (users)
-            Q_subset = q_matrix.loc[item_subset_index] # Selects rows (items)
-            R_pred_subset = display_predicted_df
-
-            col3, col4 = st.columns(2)
-            with col3:
-                st.write("**P (User-Preference) Matrix (subset)**")
-                st.dataframe(P_subset.style.format("{:.2f}").background_gradient(cmap='viridis', axis=None, vmin=-1, vmax=1), use_container_width=True)
-            with col4:
-                st.write("**Q (Item-Feature) Matrix (subset)**")
-                st.dataframe(Q_subset.style.format("{:.0f}"), use_container_width=True)
-
-            # --- NEW: Calculate and Display Expectation Matrix ---
-            st.subheader("Prediction Expectation Analysis")
-            st.info("This table shows the **difference** between the model's prediction and the 'ideal' rating (generated from the ground-truth P and Q matrices). "
-                    "\n- **Near 0 (Yellow):** The prediction is *expected*. "
-                    "\n- **Positive (Green):** The prediction is *higher than expected*. "
-                    "\n- **Negative (Red):** The prediction is *lower than expected*.")
-
-            try:
-                R_ideal_raw = P_subset @ Q_subset.T
-
-                if R_ideal_raw.size > 0:
-                    scaler = MinMaxScaler(feature_range=(0, 5))
-                    R_ideal_scaled = scaler.fit_transform(R_ideal_raw.to_numpy().reshape(-1, 1)).reshape(R_ideal_raw.shape)
-                    R_ideal_scaled_df = pd.DataFrame(R_ideal_scaled, index=R_ideal_raw.index, columns=R_ideal_raw.columns)
-
-                    # Calculate the difference
-                    Diff_df = R_pred_subset - R_ideal_scaled_df
-
-                    st.write("**Prediction Expectation (Prediction - Ideal Rating)**")
-
-                    # --- START FIX for Request 2 (Truncation) ---
-                    def truncate_name(name, length=15):
-                        if len(str(name)) > length:
-                            return str(name)[:length] + '...'
-                        return str(name)
-
-                    Diff_df_display = Diff_df.copy()
-                    # Truncate the *column* (item) names
-                    Diff_df_display.columns = [truncate_name(col, 15) for col in Diff_df.columns]
-
-                    # Render the truncated dataframe
-                    st.dataframe(Diff_df_display.style.background_gradient(cmap='RdYlGn_r', axis=None, vmin=-3, vmax=3).format("{:.2f}"))
-                    # --- END FIX for Request 2 (Truncation) ---
-
-
-                    # --- NEW: Deep Dive Section ---
-                    st.subheader("Prediction Deep Dive")
-
-                    # --- START FIX for Request 1 (Clarity) ---
-                    st.info("ℹ️ **How to use:** Select a user and item from the dropdowns below to see the ground-truth calculation for that specific cell. (Clicking the heatmap cell directly is not supported).")
-                    # --- END FIX for Request 1 (Clarity) ---
-
-                    deep_col1, deep_col2 = st.columns(2)
-                    with deep_col1:
-                        selected_user_deep = st.selectbox("Select User:", options=display_original_df.index, key="deep_dive_user")
-                    with deep_col2:
-                        selected_item_deep = st.selectbox("Select Item:", options=display_original_df.columns, key="deep_dive_item")
-
-                    if selected_user_deep and selected_item_deep:
-                        p_vec = P_subset.loc[selected_user_deep]
-                        q_vec = Q_subset.loc[selected_item_deep]
-
-                        ideal_raw = R_ideal_raw.loc[selected_user_deep, selected_item_deep]
-                        ideal_scaled = R_ideal_scaled_df.loc[selected_user_deep, selected_item_deep]
-                        prediction = R_pred_subset.loc[selected_user_deep, selected_item_deep]
-                        diff = Diff_df.loc[selected_user_deep, selected_item_deep]
-
-                        calc_col1, calc_col2, calc_col3 = st.columns(3)
-
-                        with calc_col1:
-                            st.write(f"**User Profile (P)**")
-                            st.dataframe(p_vec.to_frame(name="Preference").style.background_gradient(cmap='viridis', vmin=-1, vmax=1).format("{:.2f}"))
-                        with calc_col2:
-                            st.write(f"**Item Profile (Q)**")
-                            st.dataframe(q_vec.to_frame(name="Feature"))
-                        with calc_col3:
-                            st.write("**Calculation**")
-                            st.metric(label="Ground Truth Score (P @ Q.T)", value=f"{ideal_raw:.3f}")
-                            st.metric(label="Ideal Scaled Rating (0-5)", value=f"{ideal_scaled:.3f}")
-                            st.metric(label="Model's Actual Prediction", value=f"{prediction:.3f}")
-                            st.metric(label="Difference (Prediction - Ideal)", value=f"{diff:.3f}")
-
-            except Exception as e:
-                st.error(f"Error during expectation analysis: {e}")
-                import traceback
-                st.exception(traceback.format_exc())
-        elif is_generated_dataset and is_implicit_model:
-            st.divider()
-            st.subheader("Ground Truth Analysis (Not Applicable)")
-            st.info(f"The **Prediction Expectation Analysis** is not shown because **{algo_name}** is an implicit feedback (ranking) model. "
-                    "It predicts ranking scores, not explicit 0-5 ratings, so it cannot be directly compared to the 'Ideal Rating' ground truth.")
-    with tab3:
-        st.subheader("Get Top N Recommendations")
-        user_list = results['predicted_df'].index
-        selected_user = st.selectbox("Select a User:", options=user_list)
-        num_recs = st.number_input("Number of Recommendations (N):", 1, 20, 5)
-
-        if selected_user:
-            user_profiles_df = results.get('user_profiles')
-
-            # --- MODIFIED BLOCK: Show P matrix profile if it exists ---
-            if user_profiles_df is not None:
-                st.subheader(f"Ground Truth Interest Profile for User {selected_user}")
-                try:
-                    # --- FIX: Use .loc[] for string-based index ---
-                    user_profile_data = user_profiles_df.loc[selected_user]
-                    profile_df = user_profile_data.to_frame(name='Interest Score').sort_values(by='Interest Score', ascending=False)
-                    st.dataframe(profile_df.style.background_gradient(cmap='viridis', axis=None, vmin=-1, vmax=1).format("{:.2f}"), use_container_width=True)
-                except (KeyError, IndexError, TypeError):
-                    st.warning(f"Could not find a ground truth profile for User {selected_user}.")
-            # --- END MODIFIED BLOCK ---
-
-            original_data, user_scores = results['original_df'], results['predicted_df'].loc[selected_user]
-            seen_items = original_data.loc[selected_user][original_data.loc[selected_user] > 0].index
-            top_n_ids = user_scores.drop(seen_items, errors='ignore').nlargest(num_recs)
-
-            top_n_titles = top_n_ids.copy()
-            top_n_titles.index = top_n_titles.index.map(lambda mid: get_movie_title(mid, movie_titles_df))
-
-            top_n_df = top_n_titles.to_frame(name="Predicted Score")
-
-            # --- MODIFIED BLOCK: Add characteristics column ---
             is_generated_dataset = results.get('user_profiles') is not None and results.get('Q_matrix') is not None
-            if is_generated_dataset:
+            algo_name = results['algo_name']
+            algo_config_all = ALGORITHM_CONFIG.get(algo_name, {})
+            is_implicit_model = algo_config_all.get("is_implicit", False)
+            if is_generated_dataset and not is_implicit_model:
+                st.divider()
+                st.subheader("Ground Truth Analysis (for reference only)")
+                st.info("The following matrices were used to **generate** this dataset. They were **not** passed to the recommender.")
+
+                p_matrix = results.get('user_profiles')
                 q_matrix = results.get('Q_matrix')
 
-                # top_n_ids.index contains the item names/IDs
-                item_names_to_lookup = top_n_ids.index
+                user_subset_index = display_original_df.index
+                item_subset_index = display_original_df.columns
 
-                # Filter Q_matrix to only the recommended items
-                q_subset = q_matrix.loc[item_names_to_lookup]
+                P_subset = p_matrix.loc[user_subset_index]
+                Q_subset = q_matrix.loc[item_subset_index]
+                R_pred_subset = display_predicted_df
 
-                # Function to get features
-                def get_feature_string(item_row):
-                    features = item_row[item_row == 1].index.tolist()
-                    return ", ".join(features)
+                col3, col4 = st.columns(2)
+                with col3:
+                    st.write("**P (User-Preference) Matrix (subset)**")
+                    st.dataframe(P_subset.style.format("{:.2f}").background_gradient(cmap='viridis', axis=None, vmin=-1, vmax=1), use_container_width=True)
+                with col4:
+                    st.write("**Q (Item-Feature) Matrix (subset)**")
+                    st.dataframe(Q_subset.style.format("{:.0f}"), use_container_width=True)
 
-                # Apply function row-wise
-                top_n_df["Known Item Characteristics"] = q_subset.apply(get_feature_string, axis=1)
-            # --- END MODIFIED BLOCK ---
+                st.subheader("Prediction Expectation Analysis")
+                st.info("This table shows the **difference** between the model's prediction and the 'ideal' rating (generated from the ground-truth P and Q matrices). "
+                        "\n- **Near 0 (Yellow):** The prediction is *expected*. "
+                        "\n- **Positive (Green):** The prediction is *higher than expected*. "
+                        "\n- **Negative (Red):** The prediction is *lower than expected*.")
 
-            st.subheader(f"Top {num_recs} Recommendations for User {selected_user}")
-            st.dataframe(top_n_df.style.format({"Predicted Score": "{:.2f}"}), use_container_width=True)
+                try:
+                    R_ideal_raw = P_subset @ Q_subset.T
+                    if R_ideal_raw.size > 0:
+                        scaler = MinMaxScaler(feature_range=(0, 5))
+                        R_ideal_scaled = scaler.fit_transform(R_ideal_raw.to_numpy().reshape(-1, 1)).reshape(R_ideal_raw.shape)
+                        R_ideal_scaled_df = pd.DataFrame(R_ideal_scaled, index=R_ideal_raw.index, columns=R_ideal_raw.columns)
+                        Diff_df = R_pred_subset - R_ideal_scaled_df
+                        st.write("**Prediction Expectation (Prediction - Ideal Rating)**")
+
+                        def truncate_name(name, length=15):
+                            if len(str(name)) > length:
+                                return str(name)[:length] + '...'
+                            return str(name)
+                        Diff_df_display = Diff_df.copy()
+                        Diff_df_display.columns = [truncate_name(col, 15) for col in Diff_df.columns]
+                        st.dataframe(Diff_df_display.style.background_gradient(cmap='RdYlGn_r', axis=None, vmin=-3, vmax=3).format("{:.2f}"))
+
+                        st.subheader("Prediction Deep Dive")
+                        st.info("ℹ️ **How to use:** Select a user and item from the dropdowns below to see the ground-truth calculation for that specific cell.  "
+                                "(Clicking the heatmap cell directly is not supported).")
+
+                        deep_col1, deep_col2 = st.columns(2)
+                        with deep_col1:
+                            selected_user_deep = st.selectbox("Select User:", options=display_original_df.index, key="deep_dive_user")
+                        with deep_col2:
+                            selected_item_deep = st.selectbox("Select Item:", options=display_original_df.columns, key="deep_dive_item")
+
+                        if selected_user_deep and selected_item_deep:
+                            p_vec = P_subset.loc[selected_user_deep]
+                            q_vec = Q_subset.loc[selected_item_deep]
+                            ideal_raw = R_ideal_raw.loc[selected_user_deep, selected_item_deep]
+                            ideal_scaled = R_ideal_scaled_df.loc[selected_user_deep, selected_item_deep]
+                            prediction = R_pred_subset.loc[selected_user_deep, selected_item_deep]
+                            diff = Diff_df.loc[selected_user_deep, selected_item_deep]
+                            calc_col1, calc_col2, calc_col3 = st.columns(3)
+                            with calc_col1:
+                                st.write(f"**User Profile (P)**")
+                                st.dataframe(p_vec.to_frame(name="Preference").style.background_gradient(cmap='viridis', vmin=-1, vmax=1).format("{:.2f}"))
+                            with calc_col2:
+                                st.write(f"**Item Profile (Q)**")
+                                st.dataframe(q_vec.to_frame(name="Feature"))
+                            with calc_col3:
+                                st.write("**Calculation**")
+                                st.metric(label="Ground Truth Score (P @ Q.T)", value=f"{ideal_raw:.3f}")
+                                st.metric(label="Ideal Scaled Rating (0-5)", value=f"{ideal_scaled:.3f}")
+                                st.metric(label="Model's Actual Prediction", value=f"{prediction:.3f}")
+                                st.metric(label="Difference (Prediction - Ideal)", value=f"{diff:.3f}")
+                except Exception as e:
+                    st.error(f"Error during expectation analysis: {e}")
+                    import traceback
+                    st.exception(traceback.format_exc())
+            elif is_generated_dataset and is_implicit_model:
+                st.divider()
+                st.subheader("Ground Truth Analysis (Not Applicable)")
+                st.info(f"The **Prediction Expectation Analysis** is not shown because **{algo_name}** is an implicit feedback (ranking) model.  "
+                        "It predicts ranking scores, not explicit 0-5 ratings, so it cannot be directly compared to the 'Ideal Rating' ground truth.")
+
+        except Exception as e:
+            st.error(f"Failed to render 'Predictions' tab: {e}")
+            st.exception(e)
+
+    with tab3:
+        try:
+            st.subheader("Get Top N Recommendations")
+            user_list = results['predicted_df'].index
+            selected_user = st.selectbox("Select a User:", options=user_list)
+            num_recs = st.number_input("Number of Recommendations (N):", 1, 20, 5)
+
+            if selected_user:
+                user_profiles_df = results.get('user_profiles')
+
+                if user_profiles_df is not None:
+                    st.subheader(f"Ground Truth Interest Profile for User {selected_user}")
+                    try:
+                        user_profile_data = user_profiles_df.loc[selected_user]
+                        profile_df = user_profile_data.to_frame(name='Interest Score').sort_values(by='Interest Score', ascending=False)
+                        st.dataframe(profile_df.style.background_gradient(cmap='viridis', axis=None, vmin=-1, vmax=1).format("{:.2f}"), use_container_width=True)
+                    except (KeyError, IndexError, TypeError):
+                        st.warning(f"Could not find a ground truth profile for User {selected_user}.")
+
+                original_data, user_scores = results['original_df'], results['predicted_df'].loc[selected_user]
+                seen_items = original_data.loc[selected_user][original_data.loc[selected_user] > 0].index
+                top_n_ids = user_scores.drop(seen_items, errors='ignore').nlargest(num_recs)
+
+                top_n_titles = top_n_ids.copy()
+                top_n_titles.index = top_n_titles.index.map(lambda mid: get_movie_title(mid, movie_titles_df))
+                top_n_df = top_n_titles.to_frame(name="Predicted Score")
+
+                is_generated_dataset = results.get('user_profiles') is not None and results.get('Q_matrix') is not None
+                if is_generated_dataset:
+                    q_matrix = results.get('Q_matrix')
+                    item_names_to_lookup = top_n_ids.index
+                    q_subset = q_matrix.loc[item_names_to_lookup]
+
+                    def get_feature_string(item_row):
+                        features = item_row[item_row == 1].index.tolist()
+                        return ", ".join(features)
+
+                    top_n_df["Known Item Characteristics"] = q_subset.apply(get_feature_string, axis=1)
+
+                st.subheader(f"Top {num_recs} Recommendations for User {selected_user}")
+                st.dataframe(top_n_df.style.format({"Predicted Score": "{:.2f}"}), use_container_width=True)
+
+        except Exception as e:
+            st.error(f"Failed to render 'Recommendations' tab: {e}")
+            st.exception(e)
 
 def render_performance_tab(metrics):
     st.header("Model Performance on Test Set")
-    if metrics['type'] == 'explicit':
-        st.info("These metrics evaluate the accuracy of the predicted ratings against the actual ratings in the test set.")
-        col1, col2, col3 = st.columns(3)
-        col1.metric(label="Root Mean Squared Error (RMSE)", value=f"{metrics.get('rmse', 0):.4f}", help="Measures the average error in predicted ratings. Lower is better.")
-        col2.metric(label="Mean Absolute Error (MAE)", value=f"{metrics.get('mae', 0):.4f}", help="Similar to RMSE, but less sensitive to large errors. Lower is better.")
-        col3.metric(label="R-squared (R²)", value=f"{metrics.get('r2', 0):.4f}", help="Indicates the proportion of variance in the actual ratings that is predictable from the model. Closer to 1 is better.")
-        col4, col5 = st.columns(2)
-        col4.metric(label="Mean Absolute Percentage Error (MAPE)", value=f"{metrics.get('mape', 0):.2f}%", help="Expresses the mean absolute error as a percentage of actual values. Lower is better.")
-        col5.metric(label="Explained Variance Score", value=f"{metrics.get('explained_variance', 0):.4f}", help="Measures how well the model accounts for the variation in the original data. Closer to 1 is better.")
-    elif metrics['type'] == 'implicit':
+
+    if 'holdout' in metrics or 'loo' in metrics:
         st.info("These metrics evaluate the quality of the item rankings produced by the model.")
+
+        tab_holdout, tab_loo = st.tabs(["Holdout (80/20) Validation", "Leave-One-Out (LOO) Validation"])
+
+        with tab_holdout:
+            metrics_holdout = metrics.get('holdout')
+            if metrics_holdout:
+                k_val = metrics_holdout.get('k', 10)
+                col1, col2 = st.columns(2)
+                col1.metric(label=f"Precision@{k_val}", value=f"{metrics_holdout.get('precision', 0):.2%}")
+                col2.metric(label=f"Recall@{k_val}", value=f"{metrics_holdout.get('recall', 0):.2%}")
+
+                st.info(f"""
+                **Precision@{k_val}**: Of the top {k_val} items recommended (excluding training), what percentage were in the 20% test set?
+                
+                **Recall@{k_val}**: Of all relevant items in the 20% test set, what percentage did the model successfully recommend in the top-{k_val}?
+                """)
+                # Add Plotly
+                fig = go.Figure(data=[
+                    go.Bar(name='Precision', x=['Performance'], y=[metrics_holdout.get('precision', 0)]),
+                    go.Bar(name='Recall', x=['Performance'], y=[metrics_holdout.get('recall', 0)])
+                ])
+                fig.update_layout(title_text=f'Holdout Precision & Recall @ {k_val}', yaxis_title="Score", yaxis_tickformat=".0%")
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("80/20 holdout metrics were not calculated.")
+
+        with tab_loo:
+            metrics_loo = metrics.get('loo')
+            if metrics_loo:
+                k_val_loo = metrics_loo.get('k', 10)
+                st.metric(label=f"Recall@{k_val_loo} (LOO / HitRate)", value=f"{metrics_loo.get('recall_loo', 0):.2%}",
+                          help="For what percentage of users did their single 'left-out' item appear in the top-K recommendations? This is the primary LOO metric.")
+
+                col1, col2 = st.columns(2)
+                col1.metric(label=f"nDCG@{k_val_loo} (LOO)", value=f"{metrics_loo.get('ndcg_loo', 0):.4f}",
+                            help="Accounts for *how high* the correct item was ranked (1.0 = perfectly at #1).")
+                col2.metric(label=f"Mean Reciprocal Rank (MRR)@{k_val_loo}", value=f"{metrics_loo.get('mrr_loo', 0):.4f}",
+                            help="The average of the reciprocal rank (1/rank) for the correct item. Rewards high ranks.")
+
+                st.info(f"""
+                **Recall (HitRate)**: What percentage of users had their test item "hit" in the top-{k_val_loo}?
+                **nDCG/MRR**: How high up in the list was the correct item?
+                """)
+            else:
+                st.info("Leave-One-Out metrics were not calculated.")
+
+    # Old logic for explicit and fallback implicit ---
+    elif metrics.get('type') == 'explicit':
+        st.info("These metrics evaluate the accuracy of the predicted ratings (e.g., 1-5) against the actual ratings in the test set.") [cite: 2090, 2091]
+        col1, col2, col3 = st.columns(3)
+        col1.metric(label="Root Mean Squared Error (RMSE)", value=f"{metrics.get('rmse', 0):.4f}", help="Measures the average error in predicted ratings. Lower is better.") [cite: 2091, 2092]
+        col2.metric(label="Mean Absolute Error (MAE)", value=f"{metrics.get('mae', 0):.4f}", help="Similar to RMSE, but less sensitive to large errors. Lower is better.") [cite: 2092]
+        col3.metric(label="R-squared (R²)", value=f"{metrics.get('r2', 0):.4f}", help="Indicates the proportion of variance in the actual ratings that is predictable from the model. Closer to 1 is better.") [cite: 2092]
+        col4, col5 = st.columns(2)
+        col4.metric(label="Mean Absolute Percentage Error (MAPE)", value=f"{metrics.get('mape', 0):.2f}%", help="Expresses the mean absolute error as a percentage of actual values. Lower is better.") [cite: 2092, 2093]
+        col5.metric(label="Explained Variance Score", value=f"{metrics.get('explained_variance', 0):.4f}", help="Measures how well the model accounts for the variation in the original data. Closer to 1 is better.") [cite: 2093]
+
+    elif metrics.get('type') == 'implicit': # Fallback for old format
+        st.info("These metrics evaluate the quality of the item rankings produced by the model.") [cite: 2093]
         col1, col2 = st.columns(2)
         k_val = metrics.get('k', 10)
         col1.metric(label=f"Precision@{k_val}", value=f"{metrics.get('precision', 0):.2%}")
         col2.metric(label=f"Recall@{k_val}", value=f"{metrics.get('recall', 0):.2%}")
-        st.info(f"**Precision**: Of the top {k_val} items recommended, what percentage were actually relevant items from the test set?\n\n**Recall**: Of all the relevant items in the test set, what percentage did the model successfully recommend in the top {k_val}?")
+        st.info(f"**Precision**: Of the top {k_val} items recommended, what percentage were actually relevant items from the test set?\n\n**Recall**: Of all the relevant items in the test set, what percentage did the model successfully recommend in the top {k_val}?") [cite: 2094]
         fig = go.Figure(data=[go.Bar(name='Precision', x=['Performance'], y=[metrics.get('precision', 0)]), go.Bar(name='Recall', x=['Performance'], y=[metrics.get('recall', 0)])])
         fig.update_layout(title_text=f'Precision and Recall @ {k_val}', yaxis_title="Score", yaxis_tickformat=".0%")
         st.plotly_chart(fig, use_container_width=True)
@@ -623,11 +669,10 @@ def render_visualizations_tab(results, selected_run_dir):
     explanations = load_visualization_info(algo_name)
     st.write(f"Displaying visualizations from: `{selected_run_dir}`")
 
-    # --- Instantiate and Call Renderer ---
     if RendererClass and issubclass(RendererClass, BaseVisualizationRenderer):
         try:
             renderer = RendererClass(selected_run_dir, explanations)
-            renderer.render() # Call the algorithm-specific render method
+            renderer.render()
         except Exception as e:
             st.error(f"Error rendering visualizations for {algo_name}: {e}")
             import traceback
