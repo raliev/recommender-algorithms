@@ -265,7 +265,7 @@ def load_generated_data(dataset_name):
         q_matrix_df = pd.read_csv(q_matrix_path, index_col=0)
 
     except FileNotFoundError as e:
-        st.error(f"Could not find dataset file: {e}. [cite: 1225] Please ensure '{dataset_name}' exists in `datasets/generated/`.")
+        st.error(f"Could not find dataset file: {e}. Please ensure '{dataset_name}' exists in `datasets/generated/`.")
         return None, None, None, None
     except Exception as e:
         st.error(f"Error loading generated dataset '{dataset_name}': {e}")

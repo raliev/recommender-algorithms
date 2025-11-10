@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+import numpy as np
 import re
 from sklearn.preprocessing import MinMaxScaler
 import streamlit as st
@@ -395,8 +396,69 @@ def render_results_tabs(results):
                     vis_df.index = vis_df.index.map(lambda mid: get_movie_title(mid, movie_titles_df))
                     fig = px.bar(vis_df, barmode='group', title=f"Original vs. Reconstructed Interactions for User {selected_user}")
                     st.plotly_chart(fig)
-                else: st.info("Reconstructed matrix not available.")
+                else:
+                    st.info("Reconstructed matrix not available.")
 
+            if results.get('Q') is not None and results.get('Q_matrix') is not None:
+
+                st.divider()
+                st.subheader("Learned vs. Ground-Truth Feature Correlation")
+                st.info("""
+                This heatmap shows the **absolute correlation** between each learned latent factor (rows) and the original ground-truth features (columns).
+                
+                - A bright cell (near 1.0) indicates the model 'discovered' that underlying feature.
+                - This works even if the model learned an *inverse* (e.g., "anti-comedy" instead of "comedy"), as the absolute correlation will still be high.
+                """)
+
+                try:
+                    # 1. Get Learned Q (Item-Factor Matrix)
+                    # Model's Q is (n_items, k_factors)
+                    Q_learned = pd.DataFrame(results['Q'], index=results['original_df'].columns)
+
+                    # 2. Get Ground-Truth Q (Item-Feature Matrix)
+                    # Wizard's Q_matrix is (n_items, n_gt_features)
+                    Q_ground_truth = results['Q_matrix']
+
+                    # 3. Align matrices on their item index (important!)
+                    common_items = Q_learned.index.intersection(Q_ground_truth.index)
+
+                    if common_items.empty:
+                        st.warning("Could not align learned Q and ground-truth Q_matrix. Item indices may not match.")
+                    else:
+                        Q_l_aligned = Q_learned.loc[common_items]
+                        Q_gt_aligned = Q_ground_truth.loc[common_items]
+
+                        k = Q_l_aligned.shape[1] # Number of learned factors
+                        gt_features = Q_gt_aligned.columns.tolist() # Ground-truth feature names
+
+                        # 4. Create the empty correlation matrix
+                        correlation_matrix = pd.DataFrame(
+                            index=[f"Learned Factor {i}" for i in range(k)],
+                            columns=gt_features,
+                            dtype=float
+                        )
+
+                        # 5. Calculate correlations
+                        for i in range(k):
+                            for j_name in gt_features:
+                                learned_vec = Q_l_aligned.iloc[:, i]
+                                gt_vec = Q_gt_aligned[j_name]
+
+                                # Use pandas' .corr() for simplicity and NaN handling
+                                corr = learned_vec.corr(gt_vec)
+                                correlation_matrix.loc[f"Learned Factor {i}", j_name] = abs(corr)
+
+                        # 6. Display the heatmap
+                        st.dataframe(
+                            correlation_matrix.style
+                            .background_gradient(cmap='viridis', axis=None, vmin=0, vmax=1)
+                            .format("{:.2f}", na_rep="N/A"),
+                            use_container_width=True
+                        )
+                except Exception as e:
+                    st.error(f"Failed to generate feature correlation matrix: {e}")
+                    import traceback
+                    st.exception(traceback.format_exc())
             else:
                 st.info(f"No specific internal visualization is available for {results['algo_name']}.")
 
@@ -630,22 +692,22 @@ def render_performance_tab(metrics):
 
     # Old logic for explicit and fallback implicit ---
     elif metrics.get('type') == 'explicit':
-        st.info("These metrics evaluate the accuracy of the predicted ratings (e.g., 1-5) against the actual ratings in the test set.") [cite: 2090, 2091]
+        st.info("These metrics evaluate the accuracy of the predicted ratings (e.g., 1-5) against the actual ratings in the test set.") 
         col1, col2, col3 = st.columns(3)
-        col1.metric(label="Root Mean Squared Error (RMSE)", value=f"{metrics.get('rmse', 0):.4f}", help="Measures the average error in predicted ratings. Lower is better.") [cite: 2091, 2092]
-        col2.metric(label="Mean Absolute Error (MAE)", value=f"{metrics.get('mae', 0):.4f}", help="Similar to RMSE, but less sensitive to large errors. Lower is better.") [cite: 2092]
-        col3.metric(label="R-squared (R²)", value=f"{metrics.get('r2', 0):.4f}", help="Indicates the proportion of variance in the actual ratings that is predictable from the model. Closer to 1 is better.") [cite: 2092]
+        col1.metric(label="Root Mean Squared Error (RMSE)", value=f"{metrics.get('rmse', 0):.4f}", help="Measures the average error in predicted ratings. Lower is better.") 
+        col2.metric(label="Mean Absolute Error (MAE)", value=f"{metrics.get('mae', 0):.4f}", help="Similar to RMSE, but less sensitive to large errors. Lower is better.") 
+        col3.metric(label="R-squared (R²)", value=f"{metrics.get('r2', 0):.4f}", help="Indicates the proportion of variance in the actual ratings that is predictable from the model. Closer to 1 is better.") 
         col4, col5 = st.columns(2)
-        col4.metric(label="Mean Absolute Percentage Error (MAPE)", value=f"{metrics.get('mape', 0):.2f}%", help="Expresses the mean absolute error as a percentage of actual values. Lower is better.") [cite: 2092, 2093]
-        col5.metric(label="Explained Variance Score", value=f"{metrics.get('explained_variance', 0):.4f}", help="Measures how well the model accounts for the variation in the original data. Closer to 1 is better.") [cite: 2093]
+        col4.metric(label="Mean Absolute Percentage Error (MAPE)", value=f"{metrics.get('mape', 0):.2f}%", help="Expresses the mean absolute error as a percentage of actual values. Lower is better.") 
+        col5.metric(label="Explained Variance Score", value=f"{metrics.get('explained_variance', 0):.4f}", help="Measures how well the model accounts for the variation in the original data. Closer to 1 is better.") 
 
     elif metrics.get('type') == 'implicit': # Fallback for old format
-        st.info("These metrics evaluate the quality of the item rankings produced by the model.") [cite: 2093]
+        st.info("These metrics evaluate the quality of the item rankings produced by the model.") 
         col1, col2 = st.columns(2)
         k_val = metrics.get('k', 10)
         col1.metric(label=f"Precision@{k_val}", value=f"{metrics.get('precision', 0):.2%}")
         col2.metric(label=f"Recall@{k_val}", value=f"{metrics.get('recall', 0):.2%}")
-        st.info(f"**Precision**: Of the top {k_val} items recommended, what percentage were actually relevant items from the test set?\n\n**Recall**: Of all the relevant items in the test set, what percentage did the model successfully recommend in the top {k_val}?") [cite: 2094]
+        st.info(f"**Precision**: Of the top {k_val} items recommended, what percentage were actually relevant items from the test set?\n\n**Recall**: Of all the relevant items in the test set, what percentage did the model successfully recommend in the top {k_val}?") 
         fig = go.Figure(data=[go.Bar(name='Precision', x=['Performance'], y=[metrics.get('precision', 0)]), go.Bar(name='Recall', x=['Performance'], y=[metrics.get('recall', 0)])])
         fig.update_layout(title_text=f'Precision and Recall @ {k_val}', yaxis_title="Score", yaxis_tickformat=".0%")
         st.plotly_chart(fig, use_container_width=True)

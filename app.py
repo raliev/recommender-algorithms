@@ -1,11 +1,23 @@
 import streamlit as st
-
 from utils import cleanup_old_reports
+import os  # Import os to check for file existence
 
 st.set_page_config(
     page_title="Recommender System Lab",
     layout="wide"
 )
+
+@st.cache_data
+def load_readme():
+    """Loads the README.md file from the root directory."""
+    readme_path = "README.md"
+    if not os.path.exists(readme_path):
+        return "Error: README.md file not found. Could not load introduction."
+    try:
+        with open(readme_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"Error reading README.md: {e}"
 
 if 'cleanup_done' not in st.session_state:
     try:
@@ -44,3 +56,6 @@ with st.sidebar:
         - **Dataset Wizard**: Create and save your own synthetic datasets.
         - **Report Viewer**: View the results from past tuning runs.
         """)
+
+readme_content = load_readme()
+st.markdown(readme_content)
