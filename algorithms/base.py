@@ -1,4 +1,3 @@
-# algorithms/base.py
 class Recommender:
     """
     Base class for all recommendation models.

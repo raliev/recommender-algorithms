@@ -1,4 +1,3 @@
-# visualization/visualizers/UserKNNVisualizer.py
 import os
 import json
 from datetime import datetime
@@ -13,7 +12,7 @@ class UserKNNVisualizer(AlgorithmVisualizer):
     Now composes plotting helpers instead of containing them directly.
     """
     def __init__(self, **kwargs):
-        super().__init__("UserKNN") # Set algorithm name explicitly
+        super().__init__("UserKNN")
 
         self.similarity_plotter = SimilarityMatrixPlotter(self.visuals_dir)
 
@@ -25,12 +24,9 @@ class UserKNNVisualizer(AlgorithmVisualizer):
         :param co_rated_counts_matrix: Matrix showing how many users were co-rated (optional).
         :param params: Parameters of the algorithm run.
         """
-        self.start_run(params) # Initialize run and save params
-        self.visuals_manifest = [] # Reset manifest for this visualization run
+        self.start_run(params)
+        self.visuals_manifest = []
 
-        # --- REFFACTORED: Use SimilarityMatrixPlotter component ---
-
-        # 1. Plot Final Similarity Matrix Heatmap
         manifest_entry_final_heatmap = self.similarity_plotter.plot_heatmap(
             matrix=final_similarity_matrix,
             title="Final (Adjusted) User-User Similarity Matrix (Sampled)",

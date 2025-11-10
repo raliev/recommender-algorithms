@@ -1,4 +1,3 @@
-# app/algorithms/ncf.py
 import numpy as np
 from .base import Recommender
 
@@ -96,17 +95,15 @@ class NCFRecommender(Recommender):
         all_item_ids = torch.LongTensor(np.concatenate([item_ids, np.array(neg_item_ids)])) #
         all_labels = torch.FloatTensor(np.concatenate([labels, np.zeros(len(neg_user_ids), dtype=np.float32)])) #
 
-        dataset = TensorDataset(all_user_ids, all_item_ids, all_labels.view(-1, 1)) #
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True) #
+        dataset = TensorDataset(all_user_ids, all_item_ids, all_labels.view(-1, 1))
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
-        # --- FIX: Pass the internal model_type ---
-        self.model = NCFModel(self.num_users, self.num_items, self.k, self.model_type_internal) #
-        optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate) #
-        criterion = nn.BCELoss() #
+        self.model = NCFModel(self.num_users, self.num_items, self.k, self.model_type_internal)
+        optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        criterion = nn.BCELoss()
 
         if visualizer:
-            # k_factors param for visualizer init
-            visualizer.k_factors = self.k #
+            visualizer.k_factors = self.k
             visualizer.start_run(params_to_save, R=R) #
 
         self.model.train() #

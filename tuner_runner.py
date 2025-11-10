@@ -50,7 +50,6 @@ def run_tuning_process(configured_params, data_source, data_params, n_trials):
         elif data_source == "Synthetic 20x20":
             data_to_use, _, _ = load_synthetic_data()
         elif data_source in generated_dataset_names:
-            # --- MODIFIED: Now receives 4 variables, but we only need 1 ---
             data_to_use, _, _, _ = load_generated_data(data_source)
             if data_to_use is None:
                 st.error(f"Failed to load generated dataset '{data_source}'.")

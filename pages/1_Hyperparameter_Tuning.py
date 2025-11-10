@@ -1,4 +1,3 @@
-# pages/1_Hyperparameter_Tuning.py
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -9,7 +8,6 @@ from utils import get_generated_datasets
 st.set_page_config(page_title="Hyperparameter Tuning", layout="wide")
 st.title("Hyperparameter Tuning")
 
-# --- DATA SELECTION ---
 st.sidebar.header("Data Source")
 base_data_options = ["Synthetic 20x20", "Load MovieLens CSV"]
 generated_data_options = get_generated_datasets()
@@ -33,7 +31,6 @@ for algo_name, params in TUNER_CONFIG.items():
     if st.sidebar.checkbox(algo_name, value=True, key=f"select_{algo_name}"):
         selected_algorithms[algo_name] = params
 
-# --- HYPERPARAMETER CONFIGURATION ---
 st.header("Configure Hyperparameters")
 
 if not selected_algorithms:
@@ -64,7 +61,6 @@ for algo_name, params in selected_algorithms.items():
         config = params[param_name]
 
         if "options" in config:
-            # Categorical parameter
             with expander:
                 algo_configs[param_name] = st.multiselect(
                     f"{param_name}",
@@ -73,15 +69,13 @@ for algo_name, params in selected_algorithms.items():
                     key=f"{algo_name}_{param_name}"
                 )
         else:
-            # Numerical parameter 
             expander.markdown(f"**{param_name}**")
-            cols = expander.columns(2) # 
+            cols = expander.columns(2)
 
             min_val, max_val, default_val = config['min'], config['max'], config['default']
 
-            # --- CHANGE: Replace Start/End/Step with Min/Max inputs ---
-            start_val = cols[0].number_input("Min Value", value=float(min_val), key=f"{algo_name}_{param_name}_start") # 
-            end_val = cols[1].number_input("Max Value", value=float(max_val), key=f"{algo_name}_{param_name}_end") # 
+            start_val = cols[0].number_input("Min Value", value=float(min_val), key=f"{algo_name}_{param_name}_start")
+            end_val = cols[1].number_input("Max Value", value=float(max_val), key=f"{algo_name}_{param_name}_end")
 
             is_int = isinstance(default_val, int) and isinstance(min_val, int) and isinstance(max_val, int)
 
@@ -95,7 +89,6 @@ for algo_name, params in selected_algorithms.items():
 
 st.success(f"**Total interations for all algorithms: {total_iterations}**")
 
-# --- RUN BUTTON ---
 run_button = st.button("Run Tuning Process", use_container_width=True, type="primary")
 
 if run_button:

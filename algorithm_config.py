@@ -25,6 +25,18 @@ from algorithms import (
 from algorithms import AprioriRecommender, EclatRecommender, TopPopularRecommender, FPGrowthRecommender
 from algorithms.asvd import ASVDRecommender
 from algorithms.wmfbpr import WMFBPRRecommender
+from algorithms import BPRSVDPPRecommender
+from algorithms import DeepFMRecommender
+from algorithms import SimpleXRecommender
+from algorithms import EASERecommender
+from visualization.renderers.EASERenderer import EASERenderer
+from visualization.visualizers.EASEVisualizer import EASEVisualizer
+from visualization.renderers.SimpleXVisualizationRenderer import SimpleXVisualizationRenderer
+from visualization.visualizers.SimpleXVisualizer import SimpleXVisualizer
+from visualization.renderers.DeepFMRenderer import DeepFMRenderer
+from visualization.visualizers.DeepFMVisualizer import DeepFMVisualizer
+from visualization.renderers.BPRSVDPPVisualizationRenderer import BPRSVDPPVisualizationRenderer
+from visualization.visualizers.BPRSVDPPVisualizer import BPRSVDPPVisualizer
 from visualization.renderers.ASVDVisualizationRenderer import ASVDVisualizationRenderer
 from visualization.renderers.WMFBPRVisualizationRenderer import WMFBPRVisualizationRenderer
 from visualization.visualizers.WMFBPRVisualizer import WMFBPRVisualizer
@@ -122,11 +134,11 @@ ALGORITHM_CONFIG = {
         "visualizer_class": AssociationRuleVisualizer,
         "visualization_renderer_class": AssociationRuleVisualizationRenderer
     },
-    "SVD": {
+    "TruncatedSVD": {
         "is_implicit": False,
         "model_class": SVDRecommender, 
         "parameters": {
-            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 20}
+            "k": {"type": "slider", "label": "Truncated SVD components", "min": 1, "max": 100, "default": 20}
         },
         "result_type": "matrix_factorization",
         "visualizer_class": SVDVisualizer,
@@ -195,6 +207,21 @@ ALGORITHM_CONFIG = {
         "visualizer_class": BPRAdaptiveVisualizer,
         "visualization_renderer_class": BPRAdaptiveVisualizationRenderer
     },
+    "BPR+SVDPP": {
+        "model_class": BPRSVDPPRecommender,
+        "is_implicit": True,
+        "parameters": {
+            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
+            "iterations": {"type": "slider", "label": "Iterations", "min": 100, "max": 5000, "default": 200, "step": 100},
+            "learning_rate": {"type": "slider", "label": "Learning Rate (alpha)", "min": 0.001, "max": 0.1, "default": 0.01, "step": 0.001, "format": "%.3f"},
+            "lambda_reg": {"type": "slider", "label": "Regularization (lambda)", "min": 0.0, "max": 0.1, "default": 0.01, "step": 0.001, "format": "%.3f"},
+            "negative_sample_pool_size": {"type": "slider", "label": "Adaptive Sample Pool", "min": 1, "max": 50, "default": 5, "step": 1, "help": "Size of the random pool to sample from to find the 'hardest' negative."}
+        },
+        "result_type": "bpr",
+        "visualizer_class": BPRSVDPPVisualizer,
+        "visualization_renderer_class": BPRSVDPPVisualizationRenderer
+    },
+
     "ItemKNN": {
         "model_class": ItemKNNRecommender,
         "is_implicit": False,
@@ -358,6 +385,49 @@ ALGORITHM_CONFIG = {
         "result_type": "neural",
         "visualizer_class": NCFVisualizer,
         "visualization_renderer_class": NCFVisualizationRenderer
+    },
+    "DeepFM": {
+        "model_class": DeepFMRecommender,
+        "is_implicit": True,
+        "parameters": {
+            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
+            "epochs": {"type": "slider", "label": "Epochs", "min": 1, "max": 50, "default": 10},
+            "batch_size": {"type": "select_slider", "label": "Batch Size", "options": [16, 32, 64, 128, 256], "default": 64},
+            "learning_rate": {"type": "slider", "label": "Learning Rate", "min": 0.0001, "max": 0.01, "default": 0.001, "format": "%.4f"},
+            "lambda_reg": {"type": "slider", "label": "L2 Regularization (lambda)", "min": 0.0, "max": 0.1, "default": 0.01, "step": 0.001, "format": "%.3f"}
+        },
+        "info": "DeepFM: A Factorization-Machine based Neural Network. Combines a Linear component (1st order), FM component (2nd order), and a deep MLP (high order) for CTR prediction.",
+        "result_type": "neural",
+        "visualizer_class": DeepFMVisualizer,
+        "visualization_renderer_class": DeepFMRenderer
+    },
+    "SimpleX": {
+        "model_class": SimpleXRecommender,
+        "is_implicit": True,
+        "parameters": {
+            "k": {"type": "slider", "label": "Latent Factors (k)", "min": 1, "max": 100, "default": 32},
+            "epochs": {"type": "slider", "label": "Epochs", "min": 1, "max": 100, "default": 30},
+            "batch_size": {"type": "select_slider", "label": "Batch Size", "options": [64, 128, 256, 512, 1024], "default": 256},
+            "learning_rate": {"type": "slider", "label": "Learning Rate", "min": 0.0001, "max": 0.01, "default": 0.001, "format": "%.4f"},
+            "lambda_reg": {"type": "slider", "label": "Consistency (gamma)", "min": 0.0, "max": 1.0, "default": 0.1, "step": 0.01, "format": "%.2f", "help": "Strength of consistency regularization (gamma)."},
+            "tau": {"type": "slider", "label": "Temperature (tau)", "min": 0.01, "max": 1.0, "default": 0.1, "step": 0.01, "format": "%.2f", "help": "Temperature for the InfoNCE loss."},
+            "dropout_rate": {"type": "slider", "label": "Dropout Rate", "min": 0.0, "max": 0.5, "default": 0.1, "step": 0.05, "help": "Dropout for consistency regularization."}
+        },
+        "info": "SimpleX: A simple bi-encoder (two-tower) model trained with a powerful InfoNCE contrastive loss and in-batch negatives.",
+        "result_type": "neural",
+        "visualizer_class": SimpleXVisualizer,
+        "visualization_renderer_class": SimpleXVisualizationRenderer
+    },
+    "EASE": {
+        "model_class": EASERecommender,
+        "is_implicit": True,
+        "parameters": {
+            "lambda_reg": {"type": "slider", "label": "Regularization (lambda)", "min": 1.0, "max": 5000.0, "default": 100.0, "step": 10.0}
+        },
+        "info": "EASE (Embarrassingly Shallow Autoencoders) is a fast, linear autoencoder that learns an item-item similarity matrix via a closed-form solution. No iterative training required.",
+        "result_type": "knn_similarity", # Reusing this type as it produces a similarity matrix
+        "visualizer_class": EASEVisualizer,
+        "visualization_renderer_class": EASERenderer
     },
     "SASRec": {
         "model_class": SASRecRecommender,

@@ -1,7 +1,7 @@
 # Defines the hyperparameter search space for each algorithm.
 # The default 'step' values are chosen as a compromise between search granularity and performance.
 TUNER_CONFIG = {
-    "SVD": {
+    "TruncatedSVD": {
         "k": {"min": 2, "max": 100, "step": 4, "default": 32}
     },
     "ALS": {
@@ -62,5 +62,21 @@ TUNER_CONFIG = {
         "iterations": {"min": 5, "max": 30, "step": 5, "default": 10},
         "lambda_reg": {"min": 0.01, "max": 1.0, "step": 0.1, "default": 0.1},
         "alpha": {"min": 1, "max": 100, "step": 10, "default": 40}
+    },
+    "DeepFM": {
+        "k": {"min": 8, "max": 64, "step": 8, "default": 32},
+        "epochs": {"min": 5, "max": 50, "step": 5, "default": 10},
+        "learning_rate": {"min": 0.0001, "max": 0.01, "step": 0.001, "default": 0.001},
+        "lambda_reg": {"min": 0.0, "max": 0.1, "step": 0.01, "default": 0.01}
+    },
+    "SimpleX": {
+        "k": {"min": 8, "max": 128, "step": 8, "default": 32},
+        "epochs": {"min": 10, "max": 100, "step": 10, "default": 30},
+        "learning_rate": {"min": 0.0001, "max": 0.01, "step": 0.001, "default": 0.001},
+        "lambda_reg": {"min": 0.0, "max": 1.0, "step": 0.1, "default": 0.1},
+        "tau": {"min": 0.05, "max": 1.0, "step": 0.05, "default": 0.1}
+    },
+    "EASE": {
+        "lambda_reg": {"min": 10, "max": 5000, "step": 50, "default": 100}
     },
 }

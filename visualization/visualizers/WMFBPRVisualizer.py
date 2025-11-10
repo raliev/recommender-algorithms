@@ -1,4 +1,3 @@
-# visualization/visualizers/wmfbpr_visualizer.py
 import os
 import json
 import numpy as np
@@ -21,9 +20,8 @@ class WMFBPRVisualizer(BPRVisualizer):
         super().__init__(k_factors, plot_interval)
         self.algorithm_name = "WMFBPR"
         self.visuals_dir = os.path.join(self.visuals_base_dir, self.algorithm_name, self.run_timestamp)
-        os.makedirs(self.visuals_dir, exist_ok=True) # Ensure it exists
+        os.makedirs(self.visuals_dir, exist_ok=True)
 
-        # --- FIX: Re-instantiate all plotters with the new, correct directory ---
         self.convergence_plotter = ConvergencePlotter(self.visuals_dir)
         self.matrix_plotter = FactorMatrixPlotter(self.visuals_dir, self.k_factors)
         self.breakdown_plotter = RecommendationBreakdownPlotter(self.visuals_dir)

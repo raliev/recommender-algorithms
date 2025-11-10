@@ -1,4 +1,3 @@
-# app/algorithms/user_knn.py
 import numpy as np
 from .base import Recommender
 from sklearn.metrics.pairwise import cosine_similarity

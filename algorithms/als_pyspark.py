@@ -1,4 +1,3 @@
-# algorithms/als_pyspark.py
 import numpy as np
 import pandas as pd
 from .base import Recommender
@@ -104,8 +103,6 @@ class ALSPySparkRecommender(Recommender):
         if not predictions_pd.empty:
             pivoted = predictions_pd.pivot(index='user', columns='item', values='prediction')
 
-            # --- FIX: Use reindex to safely align the pivot table with the full matrix shape ---
-            # Create a full index and column set from the original shape
             full_index = np.arange(self.original_shape[0])
             full_columns = np.arange(self.original_shape[1])
 

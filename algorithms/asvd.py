@@ -1,4 +1,3 @@
-# algorithms/asvd.py
 import numpy as np
 from .base import Recommender
 from sklearn.metrics import mean_squared_error

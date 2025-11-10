@@ -82,6 +82,97 @@ def split_data(df):
 
     return train_df, test_df
 
+def split_data_leave_one_out(df):
+    """
+    Creates a train/test split using the Leave-One-Out (LOO) methodology.
+    For each user, one item is randomly selected as the test item.
+    """
+    train_df = df.copy()
+    test_df = pd.DataFrame(np.zeros(df.shape), columns=df.columns, index=df.index)
+
+    # Iterate over each user
+    for user in range(df.shape[0]):
+        user_ratings_indices = df.iloc[user, :].to_numpy().nonzero()[0]
+
+        # Only create a test sample if the user has rated at least one item
+        if len(user_ratings_indices) > 0:
+            # Randomly select one item to leave out
+            leave_out_index = np.random.choice(user_ratings_indices)
+
+            # Set this item to 0 in the training set
+            train_df.iloc[user, leave_out_index] = 0
+            # Set this item to its original value in the test set
+            test_df.iloc[user, leave_out_index] = df.iloc[user, leave_out_index]
+
+    return train_df, test_df
+
+
+def evaluate_ranking_loo(predicted_scores_df, test_df, train_df, k=10):
+    """
+    Calculates Precision@k, Recall@k, nDCG@k, and MRR@k for
+    a Leave-One-Out (LOO) evaluation.
+    """
+    precisions = []
+    recalls = []
+    mrrs = []
+    ndcgs = []
+
+    # Get all item indices as a set for efficient negative sampling
+    all_item_indices = set(range(predicted_scores_df.shape[1]))
+
+    for user_id in test_df.index:
+        test_ratings = test_df.loc[user_id]
+
+        # Find the single item that was left out
+        relevant_item_series = test_ratings[test_ratings > 0]
+        if relevant_item_series.empty:
+            continue  # This user had no items left out (e.g., all ratings were in 80/20 test)
+
+        relevant_item_idx = relevant_item_series.index[0]
+
+        predicted_scores = predicted_scores_df.loc[user_id]
+
+        # In LOO evaluation, we rank all items *except* those seen in the training set
+        train_ratings_row = train_df.loc[user_id]
+        seen_items = set(train_ratings_row[train_ratings_row > 0].index)
+
+        # Ensure the relevant item itself is not accidentally in the 'seen' list
+        # (it shouldn't be, but this is a safeguard)
+        seen_items.discard(relevant_item_idx)
+
+        # Get scores for all items the user hasn't seen in the training set
+        scores_for_unseen = predicted_scores.drop(seen_items, errors='ignore')
+
+        if scores_for_unseen.empty:
+            continue
+
+        top_k_indices = set(scores_for_unseen.nlargest(k).index)
+
+        hits_at_k = 1 if relevant_item_idx in top_k_indices else 0
+
+        precisions.append(hits_at_k / k)
+        recalls.append(hits_at_k)
+
+        try:
+            all_unseen_ranks = scores_for_unseen.sort_values(ascending=False).index
+            rank = all_unseen_ranks.get_loc(relevant_item_idx) + 1
+
+            if rank <= k:
+                mrrs.append(1 / rank)
+                ndcgs.append(1 / np.log2(rank + 1))
+            else:
+                mrrs.append(0)
+                ndcgs.append(0)
+        except KeyError:
+            mrrs.append(0)
+            ndcgs.append(0)
+
+    return {
+        'precision_loo': np.mean(precisions) if precisions else 0,
+        'recall_loo': np.mean(recalls) if recalls else 0,
+        'mrr_loo': np.mean(mrrs) if mrrs else 0,
+        'ndcg_loo': np.mean(ndcgs) if ndcgs else 0
+    }
 
 def calculate_regression_metrics(predicted_df, test_df):
     test_indices = test_df.to_numpy().nonzero()
@@ -98,6 +189,7 @@ def calculate_regression_metrics(predicted_df, test_df):
         'mape': np.mean(np.abs((actuals - preds) / actuals_for_mape)) * 100,
         'explained_variance': explained_variance_score(actuals, preds)
     }
+
 
 def precision_recall_at_k(predicted_scores_df, test_df, train_df, k=10):
     precisions = []
@@ -165,25 +257,21 @@ def load_generated_data(dataset_name):
         ratings_path = os.path.join(base_path, "ratings.csv")
         movies_path = os.path.join(base_path, "movies.csv")
         user_profiles_path = os.path.join(base_path, "ground_truth_user_profiles.csv")
-        item_features_path = os.path.join(base_path, "ground_truth_item_features.csv") # --- ADDED ---
+        q_matrix_path = os.path.join(base_path, "ground_truth_item_features.csv")
 
-        # Load ratings - it's already pivoted
         ratings_pivot_df = pd.read_csv(ratings_path, index_col=0)
-
         movies_df = pd.read_csv(movies_path, index_col=0)
-
         user_profiles_df = pd.read_csv(user_profiles_path, index_col=0)
-
-        item_features_df = pd.read_csv(item_features_path, index_col=0) # --- ADDED ---
+        q_matrix_df = pd.read_csv(q_matrix_path, index_col=0)
 
     except FileNotFoundError as e:
-        st.error(f"Could not find dataset file: {e}. Please ensure '{dataset_name}' exists in `datasets/generated/`.")
-        return None, None, None, None # --- MODIFIED ---
+        st.error(f"Could not find dataset file: {e}. [cite: 1225] Please ensure '{dataset_name}' exists in `datasets/generated/`.")
+        return None, None, None, None
     except Exception as e:
         st.error(f"Error loading generated dataset '{dataset_name}': {e}")
-        return None, None, None, None # --- MODIFIED ---
+        return None, None, None, None
 
-    return ratings_pivot_df, movies_df, user_profiles_df, item_features_df # --- MODIFIED ---
+    return ratings_pivot_df, movies_df, user_profiles_df, q_matrix_df
 
 def get_generated_datasets():
     """
@@ -191,7 +279,7 @@ def get_generated_datasets():
     """
     base_dir = os.path.join("datasets", "generated")
     if not os.path.isdir(base_dir):
-        return []
+         return []
 
     try:
         dataset_names = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]

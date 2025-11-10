@@ -1,4 +1,3 @@
-# algorithms/slope_one.py
 import numpy as np
 from .base import Recommender
 

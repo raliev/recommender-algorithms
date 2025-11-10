@@ -1,4 +1,3 @@
-# visualization/visualizers/AlgorithmVisualizer.py
 import os
 import json
 import numpy as np

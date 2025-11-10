@@ -20,6 +20,11 @@ from utils import (
     calculate_regression_metrics,
     precision_recall_at_k
 )
+from algorithms import *
+
+from utils import split_data_leave_one_out
+
+from utils import evaluate_ranking_loo
 
 st.set_page_config(page_title="Recommender System Lab", layout="wide")
 st.title("Recommender System Laboratory")
@@ -28,7 +33,6 @@ if 'results' not in st.session_state: st.session_state['results'] = None
 if 'metrics' not in st.session_state: st.session_state['metrics'] = None
 if 'movie_titles' not in st.session_state: st.session_state['movie_titles'] = None
 if 'user_profiles' not in st.session_state: st.session_state['user_profiles'] = None
-# --- NEW: State for selected run ---
 if 'selected_visuals_run_dir' not in st.session_state:
     st.session_state.selected_visuals_run_dir = None
 if 'Q_matrix' not in st.session_state: st.session_state['Q_matrix'] = None
@@ -39,12 +43,16 @@ data_source, data, algorithm, model_params, data_params, run_button, show_intern
 render_previous_runs_explorer(algorithm, 'visuals')
 
 if run_button:
-    # --- This block is mostly the same ---
     data_to_use = None
     data_to_train = None
-    test_df = None
+    test_df_8020 = None
+    test_df_loo = None
+    train_df_8020 = None
+    train_df_loo = None
+
     generated_dataset_names = get_generated_datasets()
     with st.spinner("Preparing data..."):
+
         if data_source == "MovieLens (Filtered Subset)":
             full_df, movie_titles_df = download_and_load_movielens()
             st.session_state['movie_titles'] = movie_titles_df
@@ -60,8 +68,6 @@ if run_button:
                 top_users_ids = user_counts.nlargest(num_users).index
                 data_to_use = df_filtered_movies.loc[top_users_ids]
                 st.write(f"Using a subset of the data: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} items**.")
-                train_df, test_df = split_data(data_to_use)
-                data_to_train = train_df.to_numpy()
 
         elif data_source == "MovieLens (Full Dataset)":
             full_df, movie_titles_df = download_and_load_movielens()
@@ -72,19 +78,16 @@ if run_button:
                 data_to_use = full_df
                 st.warning("️️[!] You are using the full dataset. Calculations may be very slow...")
                 st.write(f"Using the full dataset: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
-                train_df, test_df = split_data(data_to_use)
-                data_to_train = train_df.to_numpy()
+
         elif data_source in generated_dataset_names:
             full_df, movie_titles_df, user_profiles_df, q_matrix_df = load_generated_data(data_source)
             if full_df is not None:
                 st.session_state['movie_titles'] = movie_titles_df
-                st.session_state['user_profiles'] = user_profiles_df # This now holds the ground truth P matrix
-                st.session_state['Q_matrix'] = q_matrix_df # --- ADDED: Store Q matrix ---
+                st.session_state['user_profiles'] = user_profiles_df
+                st.session_state['Q_matrix'] = q_matrix_df
                 data_to_use = full_df
                 st.write(f"Using generated dataset '{data_source}': **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
-                # Split the loaded data to create train/test sets
-                train_df, test_df = split_data(data_to_use)
-                data_to_train = train_df.to_numpy()
+
         elif data_source == "Synthetic 20x20":
             full_df, movie_titles_df, user_profiles_df = load_synthetic_data()
             if full_df is not None:
@@ -93,10 +96,13 @@ if run_button:
                 st.session_state['Q_matrix'] = None
                 data_to_use = full_df
                 st.write(f"Using the synthetic dataset: **{data_to_use.shape[0]} users** and **{data_to_use.shape[1]} movies**.")
-                train_df, test_df = split_data(data_to_use)
-                data_to_train = train_df.to_numpy()
 
     if data_to_use is not None:
+        train_df_8020, test_df_8020 = split_data(data_to_use)
+        train_df_loo, test_df_loo = split_data_leave_one_out(data_to_use)
+
+        data_to_train = train_df_8020.to_numpy()
+
         progress_bar = st.progress(0, text=f"Training {algorithm} model...")
 
         algo_config_all = ALGORITHM_CONFIG.get(algorithm, {})
@@ -106,15 +112,12 @@ if run_button:
             import inspect
             sig = inspect.signature(model_class.__init__)
             algo_specific_params = {k: v for k, v in model_params.items() if k in sig.parameters}
-            if 'movie_titles_df' in sig.parameters:
-                algo_specific_params['movie_titles_df'] = st.session_state.get('movie_titles')
-            if 'item_id_map' in sig.parameters:
-                # data_to_use.columns contains the MovieIDs in the correct order for the numpy matrix
-                algo_specific_params['item_id_map'] = data_to_use.columns.tolist()
+            if 'k' in sig.parameters and 'k' in ALGORITHM_CONFIG[algorithm].get("parameters", {}):
+                algo_specific_params['k'] = model_params.get('k')
+
             model = model_class(**algo_specific_params)
         else:
-            st.error(f"Algorithm {algorithm} not found.");
-            st.stop()
+            st.error(f"Algorithm {algorithm} not found."); st.stop()
 
         visualizer = None
         params_to_save = None
@@ -124,18 +127,10 @@ if run_button:
                 import inspect
                 vis_sig = inspect.signature(VisClass.__init__)
                 vis_args = {}
-
-                # Check for all known dynamic constructor arguments
                 if 'k_factors' in vis_sig.parameters:
                     vis_args['k_factors'] = model_params.get('k', 0)
                 if 'k' in vis_sig.parameters:
                     vis_args['k'] = model_params.get('k', 10)
-                if 'algorithm_name' in vis_sig.parameters:
-                    vis_args['algorithm_name'] = algorithm
-                if 'movie_titles_df' in vis_sig.parameters:
-                    vis_args['movie_titles_df'] = st.session_state.get('movie_titles')
-                if 'item_id_map' in vis_sig.parameters:
-                    vis_args['item_id_map'] = data_to_use.columns.tolist()
                 visualizer = VisClass(**vis_args)
                 params_to_save = {
                     **model_params,
@@ -178,44 +173,51 @@ if run_button:
             'model_params': model_params
         }
 
-        if test_df is not None:
-            algo_config_all = ALGORITHM_CONFIG.get(algorithm, {})
-            is_implicit_model = algo_config_all.get("is_implicit", False)
+        st.session_state['metrics'] = None
 
-            if is_implicit_model:
-                k_prec_rec = 10
-                # Pass train_df to the metric function
-                precision, recall = precision_recall_at_k(predicted_df, test_df, train_df, k=k_prec_rec)
-                st.session_state['metrics'] = {'type': 'implicit', 'precision': precision, 'recall': recall, 'k': k_prec_rec}
-            else:
-                metrics = calculate_regression_metrics(predicted_df, test_df)
-                st.session_state['metrics'] = {'type': 'explicit', **metrics}
+        algo_config_all = ALGORITHM_CONFIG.get(algorithm, {})
+        is_implicit_model = algo_config_all.get("is_implicit", False)
+
+        if is_implicit_model:
+            k_prec_rec = 10
+            metrics_8020 = {}
+            metrics_loo = {}
+
+            precision, recall = precision_recall_at_k(predicted_df, test_df_8020, train_df_8020, k=k_prec_rec)
+            metrics_8020 = {'type': 'implicit_holdout', 'precision': precision, 'recall': recall, 'k': k_prec_rec}
+
+            loo_metrics_dict = evaluate_ranking_loo(predicted_df, test_df_loo, train_df_loo, k=k_prec_rec)
+            metrics_loo = {'type': 'implicit_loo', 'k': k_prec_rec, **loo_metrics_dict}
+
+            st.session_state['metrics'] = {
+                'holdout': metrics_8020,
+                'loo': metrics_loo
+            }
         else:
-            st.session_state['metrics'] = None
+            if test_df_8020 is not None:
+                metrics = calculate_regression_metrics(predicted_df, test_df_8020)
+                st.session_state['metrics'] = {'type': 'explicit', **metrics}
 
         if visualizer and st.session_state['metrics']:
             visuals_dir = st.session_state['results'].get('visuals_dir')
             if visuals_dir and os.path.isdir(visuals_dir):
                 metrics_path = os.path.join(visuals_dir, 'metrics.json')
                 try:
+                    # Save the new structured metrics
                     with open(metrics_path, 'w') as f:
                         json.dump(st.session_state['metrics'], f, indent=4)
                 except Exception as e:
                     st.toast(f"Failed to save metrics: {e}")
 
-        # So that the *new* run is displayed, not the previously selected one.
         st.session_state.selected_visuals_run_dir = st.session_state['results']['visuals_dir']
-        st.rerun() # Rerun to show the new results immediately
+        st.rerun()
 
 if st.session_state.get('results') and st.session_state.selected_visuals_run_dir == st.session_state['results'].get('visuals_dir'):
-    # This block runs if we just completed a run
-
-    # --- MODIFIED: Add Q_matrix to the results dictionary ---
     results_with_titles = {
         **st.session_state['results'],
         'movie_titles': st.session_state.get('movie_titles'),
         'user_profiles': st.session_state.get('user_profiles'),
-        'Q_matrix': st.session_state.get('Q_matrix') # --- ADDED THIS LINE ---
+        'Q_matrix': st.session_state.get('Q_matrix')
     }
 
     if st.session_state['metrics']:
@@ -260,7 +262,7 @@ elif st.session_state.get('selected_visuals_run_dir'):
     else:
         st.info("No performance metrics (metrics.json) were saved for this run.")
 
-        # Manually build minimal info for render_visualizations_tab
+    # Manually build minimal info for render_visualizations_tab
     results_for_viz = {
         'algo_name': algorithm,
         'visuals_base_dir': 'visuals'

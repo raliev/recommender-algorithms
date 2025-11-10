@@ -1,4 +1,3 @@
-# visualization/renderers/wmfbpr_renderer.py
 import streamlit as st
 import os
 import json
@@ -54,7 +53,6 @@ class WMFBPRVisualizationRenderer(BPRVisualizationRenderer): # Inherit from BPR
             st.info("No visualizations were generated for this run.")
             return
 
-        # --- Render Convergence (from parent) ---
         st.subheader("Convergence Plots")
         factor_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "Factor Change"), None)
         auc_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "AUC"), None)
@@ -71,9 +69,7 @@ class WMFBPRVisualizationRenderer(BPRVisualizationRenderer): # Inherit from BPR
 
         st.divider()
 
-        # --- Render Snapshots (from parent) ---
         st.subheader("Latent Factor Snapshots")
-        # (This logic is copied from BPRVisualizationRenderer's inherited render method)
         snapshots = [e for e in manifest if e["type"] == "factor_snapshot"]
         snapshots.sort(key=lambda x: x["iteration"])
         if snapshots:
@@ -94,7 +90,6 @@ class WMFBPRVisualizationRenderer(BPRVisualizationRenderer): # Inherit from BPR
 
         st.divider()
 
-        # --- NEW SECTION: Item Weights ---
         st.subheader("Global Item Weights (PageRank)")
         weights_plot = next((e for e in manifest if e["type"] == "histogram" and e["interpretation_key"] == "Item Weights"), None)
 
@@ -105,9 +100,7 @@ class WMFBPRVisualizationRenderer(BPRVisualizationRenderer): # Inherit from BPR
 
         st.divider()
 
-        # --- Render t-SNE (from parent) ---
         st.subheader("Embedding t-SNE Plot")
-        # (This logic is copied from BPRVisualizationRenderer's render method)
         tsne_plots = [e for e in manifest if e["type"] == "tsne_plot"]
         tsne_plots.sort(key=lambda x: x["iteration"])
         if tsne_plots:
@@ -128,9 +121,7 @@ class WMFBPRVisualizationRenderer(BPRVisualizationRenderer): # Inherit from BPR
 
         st.divider()
 
-        # --- Render Breakdown (from parent) ---
         st.subheader("Recommendation Breakdown")
-        # (This logic is copied from BPRVisualizationRenderer's inherited render method)
         breakdown_plot = next((e for e in manifest if e["type"] == "recommendation_breakdown"), None)
         if breakdown_plot:
             generic_renderers.render_recommendation_breakdown(

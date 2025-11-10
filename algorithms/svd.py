@@ -6,7 +6,7 @@ from .base import Recommender
 class SVDRecommender(Recommender):
     def __init__(self, k, **kwargs):
         super().__init__(k)
-        self.name = "SVD"
+        self.name = "TruncatedSVD"
         self.svd = TruncatedSVD(n_components=self.k, random_state=42)
         self.sigma = None
 

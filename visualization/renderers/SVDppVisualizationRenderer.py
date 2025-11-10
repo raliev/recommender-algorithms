@@ -1,4 +1,3 @@
-# visualization/renderers/SVDppVisualizationRenderer.py
 import streamlit as st
 import os
 import json
@@ -6,7 +5,7 @@ import json
 from visualization.renderers.BaseVisualizationRenderer import BaseVisualizationRenderer
 from visualization import generic_renderers
 
-class SVDppVisualizationRenderer(BaseVisualizationRenderer): # Inherit from Base
+class SVDppVisualizationRenderer(BaseVisualizationRenderer):
     """
     Renders visualizations specific to SVD++, reading from visuals.json
     and utilizing generic rendering components for convergence and snapshots.
@@ -43,22 +42,18 @@ class SVDppVisualizationRenderer(BaseVisualizationRenderer): # Inherit from Base
             st.info("No visualizations were generated for this run according to visuals.json.")
             return
 
-        # --- Render Convergence Plots ---
         st.subheader("Convergence Plots")
         factor_change_plot = next((e for e in manifest if e["type"] == "line_plot" and e["interpretation_key"] == "Factor Change"), None)
 
         if factor_change_plot:
-            # Render the line plot (should now include P, Q, Y changes)
             generic_renderers.render_line_plot(self.run_dir, factor_change_plot, self.explanations, st)
         else:
             st.info("No factor change convergence plot found for SVD++.")
 
         st.divider()
 
-        # --- Render Snapshots (Using generic logic) ---
-        # Find all snapshot entries
         snapshots = [e for e in manifest if e["type"] == "factor_snapshot"]
-        snapshots.sort(key=lambda x: x["iteration"]) # Sort by iteration
+        snapshots.sort(key=lambda x: x["iteration"])
 
         if snapshots:
             first_snapshot = snapshots[0]
@@ -66,12 +61,10 @@ class SVDppVisualizationRenderer(BaseVisualizationRenderer): # Inherit from Base
 
             if first_snapshot["iteration"] == last_snapshot["iteration"]:
                 st.subheader(f"Snapshot: Iteration {first_snapshot['iteration']}")
-                # Render the single snapshot (will include Y heatmap if available)
                 generic_renderers.render_factor_snapshot(self.run_dir, first_snapshot, self.explanations, st)
             else:
                 st.subheader(f"Snapshot Comparison: Iteration {first_snapshot['iteration']} vs Iteration {last_snapshot['iteration']}")
                 col_snap1, col_snap2 = st.columns(2)
-                # Render first and last snapshots side-by-side
                 generic_renderers.render_factor_snapshot(self.run_dir, first_snapshot, self.explanations, col_snap1)
                 generic_renderers.render_factor_snapshot(self.run_dir, last_snapshot, self.explanations, col_snap2)
         else:

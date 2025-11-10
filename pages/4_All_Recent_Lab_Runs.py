@@ -5,6 +5,10 @@ import os
 import glob
 import json
 from datetime import datetime, time, timedelta
+# --- ADDED IMPORTS ---
+from ui_components import render_visualizations_tab
+from algorithm_config import ALGORITHM_CONFIG
+# ---------------------
 
 st.set_page_config(page_title="All Lab Runs", layout="wide")
 st.title("All Recent Lab Runs")
@@ -46,7 +50,11 @@ def load_all_runs(visuals_dir):
             except ValueError:
                 continue  # Skip folders that aren't timestamps
 
-            run_data = {'algorithm': algo_name, 'timestamp': run_timestamp}
+            run_data = {
+                'algorithm': algo_name,
+                'timestamp': run_timestamp,
+                'run_path': run_path
+            }
             params_path = os.path.join(run_path, 'params.json')
             metrics_path = os.path.join(run_path, 'metrics.json')
 
@@ -67,6 +75,7 @@ def load_all_runs(visuals_dir):
                     run_data['data_source'] = 'Error'
             else:
                 run_data['data_source'] = 'N/A'
+
             # Load metrics
             if os.path.exists(metrics_path):
                 try:
@@ -138,14 +147,14 @@ else:
     present_metrics = [col for col in METRIC_COLS if col in filtered_df.columns]
 
     # All other columns are parameters
-    param_cols = [col for col in filtered_df.columns if col not in base_cols + present_metrics + ['type']]
+    param_cols = [col for col in filtered_df.columns if col not in base_cols + present_metrics + ['type', 'run_path']]
 
     # Combine and ensure no duplicates and all columns exist
     display_cols = base_cols + present_metrics + param_cols
     display_cols = [col for col in display_cols if col in filtered_df.columns]
 
     # Format for display
-    display_df = filtered_df[display_cols].sort_values('timestamp', ascending=False)
+    display_df = filtered_df[display_cols + ['run_path']].sort_values('timestamp', ascending=False)
 
     # Format floating point numbers for better readability
     float_cols = display_df.select_dtypes(include='float').columns
@@ -155,8 +164,49 @@ else:
     if 'recall' in style_format:
         style_format['recall'] = "{:.2%}"
 
-    st.dataframe(display_df.style.format(style_format, na_rep="N/A"))
+    st.dataframe(display_df[display_cols].style.format(style_format, na_rep="N/A"), use_container_width=True)
 
+    st.divider()
+    st.subheader("Inspect Run Visualizations")
+
+    if display_df.empty:
+        st.info("No runs to inspect.")
+    else:
+        st.info("Select a run from the list above to load its visualizations.")
+
+        # Create display names for the selectbox
+        run_options = {
+            f"{row['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} | {row['algorithm']} | {row['data_source']}": row['run_path']
+            for _, row in display_df.iterrows()
+        }
+        run_options_list = ["- Select a run to view visualizations -"] + list(run_options.keys())
+
+        selected_run_key = st.selectbox("Select run to inspect:", run_options_list)
+
+        # If a run is selected, show its visualizations
+        if selected_run_key != "- Select a run to view visualizations -":
+            selected_run_path = run_options[selected_run_key]
+            # Find the original 'run' row from the dataframe
+            run = display_df[display_df['run_path'] == selected_run_path].iloc[0]
+
+            visuals_exist = os.path.exists(os.path.join(run['run_path'], 'visuals.json'))
+
+            # --- START MODIFICATION ---
+            # Remove the st.expander wrapper to prevent nesting
+
+            st.markdown(f"### Visualizations for {selected_run_key}")
+
+            if visuals_exist:
+                # Build the minimal results dict needed by the renderer
+                results_for_viz = {
+                    'algo_name': run['algorithm'],
+                    'visuals_base_dir': VISUALS_DIR
+                }
+                # Call the renderer function from ui_components
+                render_visualizations_tab(results_for_viz, run['run_path'])
+            else:
+                st.info("No visualizations (visuals.json) were saved for this run.")
+            # --- END MODIFICATION ---
     if st.button("Copy to Clipboard (TSV)"):
         try:
             display_df.to_clipboard(index=False, sep='\t')

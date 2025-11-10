@@ -1,4 +1,3 @@
-# algorithms/als_improved.py
 import numpy as np
 from .base import Recommender
 
@@ -34,9 +33,7 @@ class ALSImprovedRecommender(Recommender):
             P_old = self.P.copy() if visualizer else None
             Q_old = self.Q.copy() if visualizer else None
 
-            # --- Update User Factors and Biases ---
-            for u in range(num_users): #
-                # ... (user factor update logic remains the same) ... 
+            for u in range(num_users):
                 rated_indices = np.where(rated_mask[u, :])[0]
                 if len(rated_indices) > 0:
                     Qu = self.Q[rated_indices, :]

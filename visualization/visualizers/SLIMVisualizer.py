@@ -1,4 +1,3 @@
-# visualization/visualizers/SLIMVisualizer.py
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,13 +57,10 @@ class SLIMVisualizer(ItemKNNVisualizer):
 
         self._plot_single_user_recommendation(W, R, sample_user_id)
 
-        # 3. Finalize
-        self.params_saved['iterations_run'] = 1 # Mark as 1 "step"
+        self.params_saved['iterations_run'] = 1
         self._save_params()
-        self._save_history() # Saves an empty history.json
+        self._save_history()
         self._save_visuals_manifest()
-
-    # --- Refactored Plotting Methods ---
 
     def _plot_sparsity_pattern(self, W, max_sample_size=200):
         """

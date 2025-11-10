@@ -71,9 +71,6 @@ class BPRVisualizer(AlgorithmVisualizer):
 
 
     def _plot_convergence_graphs(self):
-        # 6. MODIFIED: Plot both factor change and AUC
-
-        # --- Plot 1: Factor Change ---
         p_changes_to_plot = self.history['p_change'][1:] if len(self.history['p_change']) > 1 else self.history['p_change']
         q_changes_to_plot = self.history['q_change'][1:] if len(self.history['q_change']) > 1 else self.history['q_change']
 
@@ -88,7 +85,6 @@ class BPRVisualizer(AlgorithmVisualizer):
             )
             self.visuals_manifest.append(manifest_entry_factors)
 
-        # --- Plot 2: AUC ---
         if 'auc' in self.history and self.history['auc']:
             auc_to_plot = self.history['auc']
             manifest_entry_auc = self.convergence_plotter.plot(

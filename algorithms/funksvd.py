@@ -1,7 +1,6 @@
-# app/algorithms/funksvd.py
 import numpy as np
 from .base import Recommender
-from sklearn.metrics import mean_squared_error # Import RMSE calculation
+from sklearn.metrics import mean_squared_error
 
 class FunkSVDRecommender(Recommender):
     def __init__(self, k, iterations=100, learning_rate=0.005, lambda_reg=0.02):

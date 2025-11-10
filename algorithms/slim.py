@@ -1,4 +1,3 @@
-# app/algorithms/slim.py
 import numpy as np
 from .base import Recommender
 

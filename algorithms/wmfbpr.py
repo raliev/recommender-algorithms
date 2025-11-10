@@ -1,4 +1,3 @@
-# algorithms/wmfbpr.py
 import numpy as np
 from .base import Recommender
 import streamlit as st
@@ -88,9 +87,6 @@ class WMFBPRRecommender(Recommender):
                 w_i = self.item_weights[item_i]
                 w_j = self.item_weights[j]
 
-                # --- WMFBPR Specific: Score Calculation ---
-                # r_ui = p_u * (q_i + w_i)
-                # r_uj = p_u * (q_j + w_j)
                 boosted_q_i = q_i + w_i
                 boosted_q_j = q_j + w_j
 
@@ -98,10 +94,6 @@ class WMFBPRRecommender(Recommender):
 
                 sigmoid_x = 1 / (1 + np.exp(r_uij))
 
-                # --- WMFBPR Specific: Gradient Updates ---
-                # Based on the paper's update rules
-
-                # Common gradient term
                 grad_common = sigmoid_x
 
                 # User update

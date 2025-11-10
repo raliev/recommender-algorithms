@@ -1,4 +1,3 @@
-# visualization/visualizers/SlopeOneVisualizer.py
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +6,7 @@ import seaborn as sns
 from .ItemKNNVisualizer import ItemKNNVisualizer
 from visualization.components.SimilarityMatrixPlotter import SimilarityMatrixPlotter
 
-class SlopeOneVisualizer(ItemKNNVisualizer): # Or AlgorithmVisualizer
+class SlopeOneVisualizer(ItemKNNVisualizer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.algorithm_name = "Slope One"
@@ -17,9 +16,8 @@ class SlopeOneVisualizer(ItemKNNVisualizer): # Or AlgorithmVisualizer
 
     def visualize_fit_results(self, dev_matrix, freq_matrix, params=None):
         self.start_run(params)
-        self.visuals_manifest = [] # Start manifest
+        self.visuals_manifest = []
 
-        # --- REFFACTORED: Use component, use logical filenames ---
         manifest_entry_1 = self.plotter.plot_heatmap(
             dev_matrix,
             "Average Deviation Matrix (Sampled)",

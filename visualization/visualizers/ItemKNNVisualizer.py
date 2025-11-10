@@ -1,9 +1,7 @@
-# visualization/visualizers/ItemKNNVisualizer.py
 import os
 import json
 from datetime import datetime
 import numpy as np
-# No longer importing matplotlib or seaborn directly here for plotting helpers
 
 from .AlgorithmVisualizer import AlgorithmVisualizer
 from visualization.components.SimilarityMatrixPlotter import SimilarityMatrixPlotter
@@ -16,10 +14,7 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
     Now composes plotting helpers instead of containing them directly.
     """
     def __init__(self, **kwargs):
-        super().__init__("ItemKNN") # Set algorithm name explicitly
-        # ItemKNN doesn't usually have plot_interval or iterations, but AlgorithmVisualizer expects it
-        # We can pass 0 or a large number for plot_interval if we don't need iteration-based plots.
-        # For simplicity, let's keep it as super().__init__("ItemKNN") and rely on visualize_fit_results.
+        super().__init__("ItemKNN")
 
         self.similarity_plotter = SimilarityMatrixPlotter(self.visuals_dir)
         self.breakdown_plotter = RecommendationBreakdownPlotter(self.visuals_dir)
@@ -47,23 +42,19 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
         else:
             sample_user_idx = 0
 
-        # 2. Get the necessary vectors
         user_history_vector = R[sample_user_idx, :]
 
-        # 3. Calculate simplified prediction scores (R_u * S)
-        # This approximates the contribution of all items
         result_vector = user_history_vector @ final_similarity_matrix
 
         num_items = R.shape[1]
         item_names = [f"Item {i}" for i in range(num_items)]
 
-        # 4. Call the plotter
         manifest_entry = self.breakdown_plotter.plot(
             user_history_vector=user_history_vector,
             result_vector=result_vector,
             item_names=item_names,
             user_id=str(sample_user_idx),
-            k=10, # Plot Top-10
+            k=10,
             filename="recommendation_breakdown.png",
             interpretation_key="Recommendation Breakdown"
         )
@@ -80,11 +71,9 @@ class ItemKNNVisualizer(AlgorithmVisualizer):
         :param co_rated_counts_matrix: Matrix showing how many items were co-rated (optional).
         :param params: Parameters of the algorithm run.
         """
-        self.start_run(params) # Initialize run and save params
-        self.visuals_manifest = [] # Reset manifest for this visualization run
+        self.start_run(params)
+        self.visuals_manifest = []
 
-        # --- (Similarity and Histogram plotting logic remains the same) ---
-        # 1. Plot Final Similarity Matrix Heatmap
         manifest_entry_final_heatmap = self.similarity_plotter.plot_heatmap(
             matrix=final_similarity_matrix,
             title="Final (Adjusted) Item-Item Similarity Matrix (Sampled)",

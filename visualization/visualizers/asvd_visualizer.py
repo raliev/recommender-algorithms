@@ -1,4 +1,3 @@
-# visualization/visualizers/asvd_visualizer.py
 import os
 import json
 import numpy as np
