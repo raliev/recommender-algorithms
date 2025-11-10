@@ -79,7 +79,7 @@ This application is divided into several key modules, accessible from the sideba
 * **ASVD** - Asymmetric SVD (no explicit user factors)
 * **ALS** - Alternating Least Squares
 * **ALS (Improved)** - ALS with bias regularization
-* **ALS (PySpark)** - Distributed implementation
+* **ALS (PySpark)** - PySpark implementation
 * **NMF** - Non-negative Matrix Factorization
 * **WRMF** - Weighted Regularized Matrix Factorization
 * **FISM** - Factorized Item Similarity Models
