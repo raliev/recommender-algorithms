@@ -187,3 +187,7 @@ For questions or support related to the book or this application:
 ![screenshots/scr8.png](screenshots/scr8.png)
 ![screenshots/scr9.png](screenshots/scr9.png)
 ![screenshots/scrA.png](screenshots/scrA.png)
+![screenshots/scr9.png](screenshots/scr12.png)
+![screenshots/scr9.png](screenshots/scr13.png)
+![screenshots/scr9.png](screenshots/scr14.png)
+![screenshots/scr9.png](screenshots/scr15.png)
