@@ -31,7 +31,7 @@ A comprehensive Streamlit application for experimenting with state-of-the-art re
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/raliev/recommender-lab.git
+    git clone https://github.com/raliev/recommender-algorithms.git
     cd recommender-lab
     ```
 
